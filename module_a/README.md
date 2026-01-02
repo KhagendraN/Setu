@@ -38,6 +38,18 @@ pip install -r requirements.txt
 python -m module_a.process_documents
 ```
 
+### 2. Build Vector Database (Step 3)
+Creates embeddings and builds ChromaDB index.
+```bash
+python -m module_a.build_vector_db
+```
+
+### 3. Run RAG Chain (Step 4)
+Ask questions to the legal assistant.
+```bash
+python -m module_a.test_rag
+```
+
 This will:
 1. Extract text from all PDFs in `data/module-A/law/`
 2. Clean and normalize the text

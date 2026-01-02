@@ -101,3 +101,7 @@ EMBEDDING_BATCH_SIZE = 32
 # Retrieval settings
 DEFAULT_RETRIEVAL_K = 5  # Number of chunks to retrieve
 
+# LLM settings (Step 4)
+MISTRAL_MODEL = "mistral-tiny"  # Options: mistral-tiny, mistral-small, mistral-medium
+MISTRAL_API_KEY_ENV_VAR = "MISTRAL_API_KEY"
+
