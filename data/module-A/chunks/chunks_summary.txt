@@ -1,0 +1,64 @@
+================================================================================
+DOCUMENT CHUNKS SUMMARY
+================================================================================
+
+Total Documents Processed: 3
+Total Chunks Created: 1749
+Total Words: 168665
+Average Chunk Size: 96.4 words
+Processing Time: 19.15 seconds
+
+Documents:
+  - Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16.pdf
+  - civil_code_1st_amendment_en.pdf
+  - citizenship_AIN_2006.pdf
+
+--------------------------------------------------------------------------------
+SAMPLE CHUNKS (First 5)
+--------------------------------------------------------------------------------
+
+Chunk 1: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16_chunk_0000
+Source: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16.pdf
+Section: N/A
+Words: 540
+Preview: THE CONSTITUTION OF NEPAL
+
+Preamble Part-1 Preliminary Part-2 Citizenship Part-3 Fundamental Rights and Duties Part-4 Directive Principles, Policies and Obligations of the State Part-5 Structure of St...
+
+--------------------------------------------------------------------------------
+
+Chunk 2: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16_chunk_0001
+Source: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16.pdf
+Section: 2. Sovereignty and state authority
+Words: 33
+Preview: 2. Sovereignty and state authority: The sovereignty and state authority of Nepal shall be vested in the Nepalese people. It shall be exercised in accordance with the provisions set forth in this Const...
+
+--------------------------------------------------------------------------------
+
+Chunk 3: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16_chunk_0002
+Source: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16.pdf
+Section: 3. Nation
+Words: 43
+Preview: 3. Nation: All the Nepalese people, with multiethnic, multilingual, multi-religious, multicultural characteristics and in geographical diversities, and having common aspirations and being united by a ...
+
+--------------------------------------------------------------------------------
+
+Chunk 4: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16_chunk_0003
+Source: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16.pdf
+Section: 4. State of Nepal
+Words: 76
+Preview: 4. State of Nepal: (1) Nepal is an independent, indivisible, sovereign, secular, inclusive, democratic, socialism-oriented, federal democratic republican state.
+Explanation: For the purposes of this A...
+
+--------------------------------------------------------------------------------
+
+Chunk 5: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16_chunk_0004
+Source: Constitution-of-Nepal_2072_Eng_www.moljpa.gov_.npDate-72_11_16.pdf
+Section: 5. National interest
+Words: 57
+Preview: 5. National interest: (1) Safeguarding of the freedom, sovereignty, territorial integrity, nationality, independence and dignity of Nepal, the rights of the
+
+Nepalese people, border security, economic...
+
+--------------------------------------------------------------------------------
+
