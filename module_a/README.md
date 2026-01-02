@@ -153,6 +153,28 @@ Edit `config.py` to customize:
 
 **Missing sections**: Check `SECTION_PATTERNS` in `config.py` for your document format.
 
-## License
+## Integration
 
-Part of Nepal Justice Weaver - Hackathon Project
+Module A is packaged as a clean Python API for easy integration into other modules (e.g., Backend, UI).
+
+### Using the API
+
+```python
+from module_a import LawExplanationAPI
+
+# Initialize (loads models once)
+legal_api = LawExplanationAPI()
+
+# Get structured explanation
+response = legal_api.get_explanation("How to get citizenship?")
+
+print(response['summary'])
+print(response['key_point'])
+print(response['explanation'])
+print(response['next_steps'])
+
+# Get sources only (no LLM)
+sources = legal_api.get_sources_only("cyber crime")
+```
+
+See `module_a/integration_example.py` for a complete demo.
