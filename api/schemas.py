@@ -25,3 +25,40 @@ class LetterGenerationResponse(BaseModel):
     missing_fields: Optional[List[str]] = None
     error: Optional[str] = None
     method: Optional[str] = None
+
+# Module B Schemas
+class BiasDetectionRequest(BaseModel):
+    text: str
+    confidence_threshold: Optional[float] = 0.7
+
+class BiasResult(BaseModel):
+    sentence: str
+    category: str
+    confidence: float
+    is_biased: bool
+
+class BiasDetectionResponse(BaseModel):
+    success: bool
+    total_sentences: int
+    biased_count: int
+    neutral_count: int
+    results: List[BiasResult]
+    error: Optional[str] = None
+
+
+# Batch variant for Module B
+class BatchBiasDetectionRequest(BaseModel):
+    texts: List[str]
+    confidence_threshold: Optional[float] = 0.7
+
+
+class BatchBiasItem(BaseModel):
+    index: int
+    input_text: str
+    result: BiasDetectionResponse
+
+
+class BatchBiasDetectionResponse(BaseModel):
+    success: bool
+    items: List[BatchBiasItem]
+    error: Optional[str] = None
