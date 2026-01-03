@@ -4,9 +4,9 @@ from typing import List
 from transformers import pipeline
 import torch
 
-# ========================
-# 1. Sentence Extraction Function (Your code, slightly improved)
-# ========================
+PDF_FILE_PATH = "module_b/file_2.pdf"  
+
+
 def extract_nepali_sentences_from_pdf(pdf_path: str) -> List[str]:
     """
     Extracts clean Nepali sentences from a searchable PDF using PyMuPDF.
@@ -41,9 +41,6 @@ def extract_nepali_sentences_from_pdf(pdf_path: str) -> List[str]:
     return cleaned
 
 
-# ========================
-# 2. Load Your Model from Hugging Face
-# ========================
 print("Loading your model from Hugging Face...")
 model_name = "sangy1212/distilbert-base-nepali-fine-tuned"
 
@@ -51,15 +48,12 @@ classifier = pipeline(
     "text-classification",
     model=model_name,
     tokenizer=model_name,
-    device=0 if torch.cuda.is_available() else -1,  # GPU if available
-    batch_size=16  # Efficient batch processing
+    device=0 if torch.cuda.is_available() else -1,  
+    batch_size=16  
 )
 
 print("Model loaded and ready!\n")
 
-# ========================
-# 3. Label Mapping
-# ========================
 id_to_label = {
     "LABEL_0":  "neutral",
     "LABEL_1":  "gender",
@@ -74,9 +68,6 @@ id_to_label = {
     "LABEL_10": "Disablity"
 }
 
-# ========================
-# 4. Batch Prediction Function
-# ========================
 def predict_bias_on_sentences(sentences: List[str], confidence_threshold: float = 0.7):
     """
     Runs batch prediction and prints results with nice formatting.
@@ -101,7 +92,7 @@ def predict_bias_on_sentences(sentences: List[str], confidence_threshold: float 
         confidence = res['score']
         
         if category != "neutral" and confidence >= confidence_threshold:
-            mark = "⚠️ BIAS DETECTED"
+            mark = " BIAS DETECTED"
             biased_count += 1
         else:
             mark = "✓ neutral / low confidence"
@@ -115,12 +106,15 @@ def predict_bias_on_sentences(sentences: List[str], confidence_threshold: float 
     print(f"\nSummary: {biased_count}/{len(sentences)} sentences contain detectable bias (confidence ≥ {confidence_threshold})")
 
 
-# ========================
-# 5. Main Execution
-# ========================
 if __name__ == "__main__":
-    # CHANGE THIS TO YOUR PDF PATH
-    pdf_file_path = "file_2.pdf"  # e.g., "formal_letter.pdf"
+    pdf_file_path = PDF_FILE_PATH 
+    import os
+
+    if os.path.exists(pdf_file_path):
+        print(f"Using PDF file at: {pdf_file_path}\n")
+    else:
+        print(f"PDF file not found at: {pdf_file_path}. Please check the path.")
+        exit(1)
     
     # Step 1: Extract sentences
     sentences = extract_nepali_sentences_from_pdf(pdf_file_path)
