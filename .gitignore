@@ -1,2 +1,96 @@
-*venv
-__pycache__
+# ===============================
+# Python
+# ===============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+*.egg
+
+# ===============================
+# Virtual Environments
+# ===============================
+venv/
+.venv/
+env/
+ENV/
+.python-version
+Backend/.env
+
+# ===============================
+# Environment Variables
+# ===============================
+.env
+.env.*
+!.env.example
+
+# ===============================
+# FastAPI / ASGI
+# ===============================
+*.log
+logs/
+uvicorn.log
+gunicorn.log
+
+# ===============================
+# Databases
+# ===============================
+*.sqlite3
+*.db
+
+# ===============================
+# Testing / Coverage
+# ===============================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ===============================
+# Build / Distribution
+# ===============================
+build/
+dist/
+wheelhouse/
+pip-wheel-metadata/
+
+# ===============================
+# IDEs & Editors
+# ===============================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===============================
+# OS Files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Jupyter
+# ===============================
+.ipynb_checkpoints/
+
+# ===============================
+# MyPy / Ruff / Pyright
+# ===============================
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# ===============================
+# Docker
+# ===============================
+docker-compose.override.yml
+
+
+**/.env
+**/.env.*
+!**/.env.example
+test.txt
