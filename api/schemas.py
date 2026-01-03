@@ -16,15 +16,47 @@ class ExplanationResponse(BaseModel):
 # Module C Schemas
 class LetterGenerationRequest(BaseModel):
     description: str
+    template_name: Optional[str] = None
     additional_data: Optional[Dict[str, str]] = None
 
 class LetterGenerationResponse(BaseModel):
     success: bool
     letter: Optional[str] = None
     template_used: Optional[str] = None
+    detected_placeholders: Optional[List[str]] = None
     missing_fields: Optional[List[str]] = None
     error: Optional[str] = None
     method: Optional[str] = None
+
+# Granular API Schemas
+class TemplateSearchRequest(BaseModel):
+    query: str
+
+class TemplateSearchResponse(BaseModel):
+    success: bool
+    template_name: Optional[str] = None
+    score: Optional[float] = None
+    content: Optional[str] = None
+    error: Optional[str] = None
+
+class TemplateDetailsRequest(BaseModel):
+    template_name: str
+
+class TemplateDetailsResponse(BaseModel):
+    success: bool
+    template_name: Optional[str] = None
+    placeholders: Optional[List[str]] = None
+    content: Optional[str] = None
+    error: Optional[str] = None
+
+class TemplateFillRequest(BaseModel):
+    template_name: str
+    placeholders: Dict[str, str]
+
+class TemplateFillResponse(BaseModel):
+    success: bool
+    letter: Optional[str] = None
+    error: Optional[str] = None
 
 # Module B Schemas
 class BiasDetectionRequest(BaseModel):
