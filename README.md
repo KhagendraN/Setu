@@ -6,6 +6,10 @@
 
 Setu is a comprehensive legal assistance platform that leverages AI/ML to help Nepali citizens interact with legal documents and government processes. The system consists of three main modules integrated with a modern web interface.
 
+## 🎥 Demo Video
+
+Watch the platform in action: [View Demo Video](https://drive.google.com/file/d/12j2J-_g7SHdcQTwU3hQU_uiWldB2RFUz/view?usp=drive_link)
+
 ## 🚀 Features
 
 ### Module A: Law Explanation (RAG-Based Chatbot)
