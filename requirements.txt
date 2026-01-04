@@ -38,7 +38,3 @@ requests  # HTTP requests
 # API Integration
 fastapi # FastAPI framework
 pydantic  # Data validation
-
-
-## Extra 
-python-m
