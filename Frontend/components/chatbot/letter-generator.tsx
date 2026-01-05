@@ -7,10 +7,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Send, FileText, User, Download, Loader2, CheckCircle2 } from "lucide-react"
+import { Send, FileText, User, Download, Loader2, CheckCircle2, Printer } from "lucide-react"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import html2canvas from "html2canvas"
 
 type MessageRole = "user" | "assistant" | "system"
 
@@ -44,7 +45,10 @@ export function LetterGenerator() {
   const [placeholderData, setPlaceholderData] = useState<PlaceholderData>({})
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
   const [generatedLetter, setGeneratedLetter] = useState<string | null>(null)
+  const [generatedLetterImage, setGeneratedLetterImage] = useState<string | null>(null)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const letterTemplateRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -63,7 +67,7 @@ export function LetterGenerator() {
 
   const addMessage = (role: MessageRole, content: string) => {
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
       role,
       content,
       timestamp: new Date(),
@@ -223,7 +227,101 @@ export function LetterGenerator() {
       .replace(/\b\w/g, (char) => char.toUpperCase())
   }
 
-  const downloadLetter = () => {
+  const generateLetterImage = async () => {
+    if (!letterTemplateRef.current) {
+      console.log("Letter template ref not available")
+      return
+    }
+
+    setIsGeneratingImage(true)
+    try {
+      console.log("Starting image generation...")
+
+      // Create an iframe to completely isolate rendering context
+      const iframe = document.createElement('iframe')
+      iframe.style.cssText = 'position: fixed; left: -10000px; top: 0; width: 794px; height: 1123px; border: none;'
+      document.body.appendChild(iframe)
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+      if (!iframeDoc) throw new Error('Unable to access iframe document')
+
+      // Write clean HTML with only our content
+      iframeDoc.open()
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+            <style>
+              * { margin: 10; padding: 10; box-sizing: border-box; }
+              body { background: white; margin: 0; padding: 0; }
+            </style>
+          </head>
+          <body>${letterTemplateRef.current.innerHTML}</body>
+        </html>
+      `)
+      iframeDoc.close()
+
+      // Wait for fonts to load
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const canvas = await html2canvas(iframeDoc.body, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: 794,
+        height: 1123,
+      })
+
+      // Clean up
+      document.body.removeChild(iframe)
+
+      console.log("Canvas created, converting to data URL...")
+      const dataUrl = canvas.toDataURL("image/png", 1.0)
+      console.log("Image generated successfully")
+      setGeneratedLetterImage(dataUrl)
+      setIsGeneratingImage(false)
+    } catch (error) {
+      console.error("Image generation failed:", error)
+      setIsGeneratingImage(false)
+      addMessage("assistant", "Failed to generate letter image. You can still download the text version.")
+    }
+  }
+
+  useEffect(() => {
+    if (generatedLetter && conversationState === "completed") {
+      // Generate image after a short delay to ensure DOM is rendered
+      setTimeout(() => {
+        generateLetterImage()
+      }, 500)
+    }
+  }, [generatedLetter, conversationState])
+
+  const downloadLetterImage = () => {
+    if (!generatedLetterImage) {
+      console.log("No image available to download")
+      return
+    }
+
+    try {
+      console.log("Starting download...")
+      const link = document.createElement("a")
+      link.href = generatedLetterImage
+      link.download = `${templateName || "letter"}_${Date.now()}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      console.log("Download initiated successfully")
+    } catch (error) {
+      console.error("Download failed:", error)
+      addMessage("assistant", "Download failed. Please try the Print option or download as text.")
+    }
+  }
+
+  const downloadLetterText = () => {
     if (!generatedLetter) return
 
     const blob = new Blob([generatedLetter], { type: "text/plain;charset=utf-8" })
@@ -235,6 +333,30 @@ export function LetterGenerator() {
     URL.revokeObjectURL(url)
   }
 
+  const printLetter = () => {
+    if (!generatedLetterImage) return
+
+    const printWindow = window.open("", "", "width=800,height=600")
+    if (!printWindow) return
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Letter</title>
+          <style>
+            @page { size: A4; margin: 0; }
+            body { margin: 10; padding: 10; }
+            img { width: 80%; height: auto; display: block; }
+          </style>
+        </head>
+        <body>
+          <img src="${generatedLetterImage}" onload="window.print(); window.close();" />
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
   const startNew = () => {
     setConversationState("initial")
     setTemplateName(null)
@@ -242,6 +364,7 @@ export function LetterGenerator() {
     setPlaceholderData({})
     setCurrentPlaceholderIndex(0)
     setGeneratedLetter(null)
+    setGeneratedLetterImage(null)
     setMessages([
       {
         id: Date.now().toString(),
@@ -273,11 +396,29 @@ export function LetterGenerator() {
           </div>
           {conversationState === "completed" && (
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={downloadLetter}>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={downloadLetterImage}
+                disabled={!generatedLetterImage || isGeneratingImage}
+              >
                 <Download className="h-4 w-4 mr-2" />
-                Download
+                {isGeneratingImage ? "Generating..." : "Download Image"}
               </Button>
-              <Button variant="default" size="sm" onClick={startNew}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={printLetter}
+                disabled={!generatedLetterImage || isGeneratingImage}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+              <Button variant="outline" size="sm" onClick={downloadLetterText}>
+                <FileText className="h-4 w-4 mr-2" />
+                Download Text
+              </Button>
+              <Button variant="secondary" size="sm" onClick={startNew}>
                 <FileText className="h-4 w-4 mr-2" />
                 New Letter
               </Button>
@@ -370,6 +511,39 @@ export function LetterGenerator() {
               )}
             </div>
           </ScrollArea>
+
+          {/* Preview of generated letter image */}
+          {conversationState === "completed" && (
+            <div className="p-4 border-t bg-muted/10">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-semibold">Generated Letter Preview (Nepali Format):</h3>
+                  {!generatedLetterImage && !isGeneratingImage && (
+                    <Button size="sm" variant="outline" onClick={generateLetterImage}>
+                      Generate Image
+                    </Button>
+                  )}
+                  {isGeneratingImage && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Generating image...
+                    </span>
+                  )}
+                </div>
+                {generatedLetterImage ? (
+                  <div className="border rounded-lg overflow-hidden shadow-lg bg-white">
+                    <img src={generatedLetterImage} alt="Nepali Letter" className="w-full" />
+                  </div>
+                ) : (
+                  <div className="border rounded-lg p-8 text-center bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      Click "Generate Image" to create the Nepali format version
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="p-4 border-t bg-muted/20 backdrop-blur-md">
@@ -405,6 +579,115 @@ export function LetterGenerator() {
         </CardFooter>
       </Card>
       </div>
+
+      {/* Hidden Nepali Paper Template for Image Generation */}
+      {generatedLetter && (
+        <div
+          ref={letterTemplateRef}
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: "90",
+            width: "794px", // A4 width at 96 DPI
+            minHeight: "1123px", // A4 height at 96 DPI
+            backgroundColor: "rgb(255, 255, 255)",
+            fontFamily: '"Noto Sans Devanagari", "Kalimati", Arial, sans-serif',
+            fontSize: "14pt",
+            lineHeight: "1.8",
+            color: "rgb(0, 0, 0)",
+            padding: "80px 80px",
+            boxSizing: "border-box",
+            visibility: "hidden",
+            pointerEvents: "none",
+            border: "none",
+            margin: "10",
+            isolation: "isolate", // Isolate from parent styles
+          }}
+        >
+          {/* Reference Number (Date removed) */}
+          <div
+            style={{
+              marginBottom: "24px",
+              fontSize: "11pt",
+              fontWeight: "600",
+              color: "rgb(0, 0, 0)",
+            }}
+          >
+            <div style={{marginLeft:"40px",marginTop:"50px"}}>चि. नं.: {placeholderData.reference_no || placeholderData.ref_no || "............."}</div>
+          </div>
+
+          {/* Recipient Address */}
+          {(placeholderData.recipient_name || placeholderData.receiver_name) && (
+            <div style={{ marginBottom: "24px", fontSize: "12pt", color: "rgb(0, 0, 0)",marginRight:"30px", }}>
+              <div style={{ fontWeight: "600" }}>श्रीमान्,</div>
+              <div>{placeholderData.recipient_name || placeholderData.receiver_name}</div>
+              {placeholderData.recipient_designation && <div>{placeholderData.recipient_designation}</div>}
+              {placeholderData.recipient_address && <div>{placeholderData.recipient_address}</div>}
+            </div>
+          )}
+
+          {/* Subject */}
+          {placeholderData.subject && (
+            <div style={{ marginBottom: "20px", fontSize: "12pt", fontWeight: "600", color: "rgb(0, 0, 0)",marginLeft:"50px",marginRight:"30px", }}>
+              <strong>विषय:</strong> {placeholderData.subject}
+            </div>
+          )}
+
+          {/* Salutation */}
+          <div style={{ marginBottom: "16px", fontSize: "12pt", color: "rgb(0, 0, 0)",marginLeft:"40px",marginRight:"30px", }}>महोदय,</div>
+
+          {/* Main Letter Content */}
+          <div
+            style={{
+              marginBottom: "40px",
+              marginLeft: "40px",
+              marginRight:"30px",
+              textAlign: "justify",
+              whiteSpace: "pre-wrap",
+              fontSize: "12pt",
+              lineHeight: "2",
+              color: "rgb(0, 0, 0)",
+            }}
+          >
+            {generatedLetter}
+          </div>
+
+          {/* Signature Section */}
+          {/* <div style={{ marginTop: "60px", float: "right", textAlign: "center", fontSize: "12pt", color: "rgb(0, 0, 0)" }}>
+            <div
+              style={{
+                borderTop: "2px solid rgb(0, 0, 0)",
+                paddingTop: "8px",
+                minWidth: "200px",
+                marginTop: "60px",
+              }}
+            >
+              <div style={{ fontWeight: "700", marginBottom: "4px", color: "rgb(0, 0, 0)" }}>
+                {placeholderData.sender_name || placeholderData.name || "........................."}
+              </div>
+              <div style={{ fontSize: "11pt", color: "rgb(55, 65, 81)" }}>
+                {placeholderData.sender_designation ||
+                  placeholderData.designation ||
+                  placeholderData.position ||
+                  "........................."}
+              </div>
+              {placeholderData.sender_office && (
+                <div style={{ fontSize: "10pt", color: "rgb(107, 114, 128)", marginTop: "2px" }}>
+                  {placeholderData.sender_office}
+                </div>
+              )}
+            </div>
+          </div> */}
+
+          {/* Footer with contact info (if available) */}
+          <div style={{ clear: "both", marginTop: "100px", paddingTop: "20px", borderTop: "1px solid rgb(229, 231, 235)" }}>
+            <div style={{ fontSize: "9pt", color: "rgb(107, 114, 128)", textAlign: "center" }}>
+              {placeholderData.contact_email && <span>Email: {placeholderData.contact_email} | </span>}
+              {placeholderData.contact_phone && <span>Phone: {placeholderData.contact_phone}</span>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
