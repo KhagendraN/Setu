@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/context/auth-context"
@@ -14,12 +15,16 @@ import { redirect } from "next/navigation"
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
+  const [mounted, setMounted] = useState(false)
 
-  console.log("Dashboard - isLoading:", isLoading);
-  console.log("Dashboard - user:", user);
-  console.log("Token in localStorage:", localStorage.getItem('access_token'));
+  useEffect(() => {
+    setMounted(true)
+    console.log("Dashboard - isLoading:", isLoading);
+    console.log("Dashboard - user:", user);
+    console.log("Token in localStorage:", localStorage.getItem('access_token'));
+  }, [isLoading, user])
 
-  if (isLoading) return null
+  if (!mounted || isLoading) return null
   if (!user) redirect("/login")
 
   const activities = [
