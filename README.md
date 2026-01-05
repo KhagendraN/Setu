@@ -137,6 +137,26 @@ pnpm dev
 
 Frontend will run at: `http://localhost:3000`
 
+## 🐳 Docker Usage (Recommended)
+
+The easiest way to run the entire platform is using Docker Compose.
+
+### 1. Prerequisites
+- Docker and Docker Compose installed
+- `.env` file with `MISTRAL_API_KEY` in the root directory
+
+### 2. Run with Docker Compose
+```bash
+docker-compose up --build
+```
+
+This will:
+- Build and start the Backend API (port 8000)
+- Build and start the Frontend (port 3000)
+- Automatically run the vector database build scripts
+
+The application will be available at `http://localhost:3000`.
+
 ## 📁 Project Structure
 
 ```
