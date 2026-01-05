@@ -15,7 +15,35 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null
     const text = formData.get("text") as string | null
     const confidenceThreshold = parseFloat(formData.get("confidence_threshold") as string || "0.7")
+    const useHITL = formData.get("use_hitl") === "true"
 
+    // If using HITL workflow for PDF files
+    if (file && useHITL) {
+      console.log("Using HITL workflow for PDF processing...")
+      const hitlFormData = new FormData()
+      hitlFormData.append("file", file)
+      hitlFormData.append("refine_with_llm", "true")
+      hitlFormData.append("confidence_threshold", confidenceThreshold.toString())
+
+      const response = await fetch(`${BACKEND_URL}/api/v1/bias-detection-hitl/start-review`, {
+        method: "POST",
+        headers,
+        body: hitlFormData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || "Failed to start HITL review")
+      }
+
+      const data = await response.json()
+      console.log("HITL session created:", data.session_id)
+
+      // Return the HITL session data
+      return NextResponse.json(data)
+    }
+
+    // Original non-HITL workflow for text or non-HITL PDF processing
     let sentences: string[] = []
     let filename: string | undefined
 

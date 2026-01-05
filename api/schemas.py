@@ -150,3 +150,76 @@ class PDFToBiasDetectionResponse(BaseModel):
     results: List[BiasResult]
     filename: Optional[str] = None
     error: Optional[str] = None
+
+# Human-in-the-Loop (HITL) Schemas
+class BiasReviewItem(BaseModel):
+    sentence_id: str
+    original_sentence: str
+    is_biased: bool
+    category: str
+    confidence: float
+    suggestion: Optional[str] = None
+    approved_suggestion: Optional[str] = None
+    status: str = "pending"  # "pending", "approved", "needs_regeneration"
+
+class BiasReviewSession(BaseModel):
+    session_id: str
+    original_filename: str
+    sentences: List[BiasReviewItem]
+    raw_text: str
+    pdf_bytes: Optional[bytes] = None
+    created_at: str
+    status: str = "pending_review"  # "pending_review", "in_progress", "completed"
+
+class StartReviewResponse(BaseModel):
+    success: bool
+    session_id: str
+    total_sentences: int
+    biased_count: int
+    neutral_count: int
+    sentences: List[BiasReviewItem]
+    filename: str
+    error: Optional[str] = None
+
+class ApprovalRequest(BaseModel):
+    session_id: str
+    sentence_id: str
+    action: str  # "approve", "reject"
+    approved_suggestion: Optional[str] = None
+
+class ApprovalResponse(BaseModel):
+    success: bool
+    sentence_id: str
+    message: str
+    error: Optional[str] = None
+
+class RegenerateSuggestionRequest(BaseModel):
+    session_id: str
+    sentence_id: str
+
+class RegenerateSuggestionResponse(BaseModel):
+    success: bool
+    sentence_id: str
+    new_suggestion: Optional[str] = None
+    error: Optional[str] = None
+
+class GeneratePDFRequest(BaseModel):
+    session_id: str
+
+class GeneratePDFResponse(BaseModel):
+    success: bool
+    pdf_filename: Optional[str] = None
+    pdf_content: Optional[bytes] = None
+    changes_applied: int
+    error: Optional[str] = None
+
+class SessionStatusResponse(BaseModel):
+    success: bool
+    session_id: str
+    status: str
+    total_sentences: int
+    pending_count: int
+    approved_count: int
+    needs_regeneration_count: int
+    sentences: List[BiasReviewItem]
+    error: Optional[str] = None
