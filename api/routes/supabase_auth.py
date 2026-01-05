@@ -7,9 +7,25 @@ from api.core.deps import get_current_user, get_current_admin
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# Initialize Supabase client (use anon key for public endpoints)
-supabase = create_client(settings.supabase_url, settings.supabase_anon_key)
-supabase_admin = create_client(settings.supabase_url, settings.supabase_service_role_key)
+# Lazy initialization of Supabase clients
+_supabase = None
+_supabase_admin = None
+
+
+def get_supabase():
+    """Get or create Supabase client (use anon key for public endpoints)"""
+    global _supabase
+    if _supabase is None:
+        _supabase = create_client(settings.supabase_url, settings.supabase_anon_key)
+    return _supabase
+
+
+def get_supabase_admin():
+    """Get or create Supabase admin client (use service role key)"""
+    global _supabase_admin
+    if _supabase_admin is None:
+        _supabase_admin = create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return _supabase_admin
 
 
 # Request/Response Models
@@ -39,7 +55,7 @@ async def signup(request: SignUpRequest):
     """
     try:
         # Create user with metadata
-        response = supabase.auth.sign_up(
+        response = get_supabase().auth.sign_up(
             {
                 "email": request.email,
                 "password": request.password,
@@ -80,7 +96,7 @@ async def login(request: LoginRequest):
     Returns access token and refresh token.
     """
     try:
-        response = supabase.auth.sign_in_with_password(
+        response = get_supabase().auth.sign_in_with_password(
             {
                 "email": request.email,
                 "password": request.password,
@@ -114,7 +130,7 @@ async def refresh_token(refresh_token: str):
     Refresh an expired access token using a refresh token.
     """
     try:
-        response = supabase.auth.refresh_session(refresh_token)
+        response = get_supabase().auth.refresh_session(refresh_token)
         if response.session:
             return {
                 "access_token": response.session.access_token,
@@ -193,7 +209,7 @@ async def set_user_role(
     Admin only: Set user role (e.g., admin, moderator, user).
     """
     try:
-        supabase_admin.auth.admin_update_user_by_id(
+        get_supabase_admin().auth.admin_update_user_by_id(
             user_id,
             {"app_metadata": {"role": role}},
         )
@@ -214,7 +230,7 @@ async def list_users(admin: dict = Depends(get_current_admin)):
     Admin only: List all users.
     """
     try:
-        response = supabase_admin.auth.admin_list_users()
+        response = get_supabase_admin().auth.admin_list_users()
         return {
             "users": [
                 {
