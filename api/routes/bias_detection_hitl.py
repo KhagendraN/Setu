@@ -4,7 +4,6 @@ Handles the interactive workflow for bias detection with human approval
 """
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-from fastapi.responses import Response
 from api.core.deps import get_current_user
 from api.schemas import (
     StartReviewResponse,
@@ -17,11 +16,11 @@ from api.schemas import (
     SessionStatusResponse,
     BiasReviewItem,
     DebiasSentenceRequest,
+    SentenceDetails,
 )
 from api.routes.bias_detection import run_bias_detection, generate_debiased_sentence
 from utility.pdf_processor import PDFProcessor
 from utility.hitl_session_manager import HITLSessionManager
-from utility.pdf_regenerator import PDFRegenerator
 from typing import Optional
 import uuid
 import logging
@@ -33,9 +32,8 @@ router = APIRouter()
 # Initialize global session manager
 session_manager = HITLSessionManager()
 
-# Initialize PDF processor and regenerator
+# Initialize PDF processor
 pdf_processor = PDFProcessor()
-pdf_regenerator = PDFRegenerator()
 
 
 @router.post("/start-review", response_model=StartReviewResponse)
@@ -143,8 +141,7 @@ async def start_bias_review(
         session = session_manager.create_session(
             filename=file.filename,
             sentences=review_items,
-            raw_text=raw_text,
-            pdf_bytes=pdf_content
+            raw_text=raw_text
         )
 
         logger.info(f"Created HITL session {session.session_id} with {len(review_items)} sentences")
@@ -292,24 +289,24 @@ async def regenerate_suggestion(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/generate-pdf")
+@router.post("/generate-pdf", response_model=GeneratePDFResponse)
 async def generate_debiased_pdf(
     request: GeneratePDFRequest,
     user: dict = Depends(get_current_user)
 ):
     """
-    Generate final PDF with all approved suggestions applied.
+    Generate final response with all approved suggestions applied.
 
     Requirements:
     - All biased sentences must be approved
-    - Returns the modified PDF as downloadable file
+    - Returns sentence details dict with newly generated (debiased) sentences along with non-biased sentences
     """
     try:
         session = session_manager.get_session(request.session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
-        # Check if session is ready for PDF generation
+        # Check if session is ready for final generation
         if not session_manager.is_session_ready_for_pdf(request.session_id):
             stats = session_manager.get_session_stats(request.session_id)
             raise HTTPException(
@@ -318,53 +315,48 @@ async def generate_debiased_pdf(
                        f"Needs regeneration: {stats['needs_regeneration_count']}"
             )
 
-        # Count changes to be applied
-        changes_count = sum(
-            1 for s in session.sentences
-            if s.is_biased and s.approved_suggestion and s.status == "approved"
-        )
+        # Build sentence details list
+        sentence_details = []
+        changes_count = 0
 
-        # Regenerate PDF with approved changes
-        success, pdf_bytes, error = pdf_regenerator.regenerate_pdf(
-            original_pdf_bytes=session.pdf_bytes,
-            sentences=session.sentences,
-            output_filename=f"debiased_{session.original_filename}"
-        )
+        for item in session.sentences:
+            # Determine final sentence
+            if item.is_biased and item.approved_suggestion and item.status == "approved":
+                final_sentence = item.approved_suggestion
+                was_modified = True
+                changes_count += 1
+            else:
+                final_sentence = item.original_sentence
+                was_modified = False
 
-        if not success:
-            # Fallback: create simple PDF
-            logger.warning(f"PDF regeneration failed, trying fallback method: {error}")
-            success, pdf_bytes, error = pdf_regenerator.create_simple_pdf_from_sentences(
-                sentences=session.sentences,
-                filename=f"debiased_{session.original_filename}"
-            )
-
-        if not success:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to generate PDF: {error}"
+            # Add sentence details
+            sentence_details.append(
+                SentenceDetails(
+                    sentence_id=item.sentence_id,
+                    original_sentence=item.original_sentence,
+                    final_sentence=final_sentence,
+                    is_biased=item.is_biased,
+                    was_modified=was_modified,
+                    category=item.category if item.is_biased else None
+                )
             )
 
         # Mark session as completed
         session_manager.mark_session_completed(request.session_id)
 
-        logger.info(f"Generated debiased PDF for session {request.session_id} with {changes_count} changes")
+        logger.info(f"Generated debiased response for session {request.session_id} with {changes_count} changes")
 
-        # Return PDF as downloadable response
-        filename = f"debiased_{session.original_filename}"
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-                "X-Changes-Applied": str(changes_count)
-            }
+        # Return response with sentence details
+        return GeneratePDFResponse(
+            success=True,
+            changes_applied=changes_count,
+            sentences=sentence_details
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error generating PDF: {e}")
+        logger.error(f"Error generating response: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
