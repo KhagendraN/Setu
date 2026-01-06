@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import html2canvas from "html2canvas"
-import { addDocumentToCache } from "@/lib/document-cache"
+import { addGeneratedLetter } from "@/lib/document-cache"
+import { useAuth } from "@/context/auth-context"
 
 type MessageRole = "user" | "assistant" | "system"
 
@@ -30,6 +31,7 @@ interface PlaceholderData {
 }
 
 export function LetterGenerator() {
+  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -250,13 +252,13 @@ export function LetterGenerator() {
         )
 
         // Cache the generated letter
-        addDocumentToCache({
-          filename: `${templateName || "letter"}_${Date.now()}.txt`,
-          type: "letter-generation",
-          result: {
+        if (user?.id) {
+          addGeneratedLetter(user.id, {
+            filename: `${templateName || "letter"}_${Date.now()}.txt`,
+            templateName: templateName || "letter",
             success: true,
-          },
-        })
+          })
+        }
       } else {
         addMessage("assistant", "Failed to generate the letter. Please try again.")
         setConversationState("initial")

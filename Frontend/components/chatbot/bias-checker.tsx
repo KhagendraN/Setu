@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { AlertCircle, Info, Search, Upload, X, CheckCircle2, ShieldAlert, FileText, Download, RefreshCw, ThumbsUp, ThumbsDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { addDocumentToCache } from "@/lib/document-cache"
+import { addAnalyzedDocument } from "@/lib/document-cache"
+import { useAuth } from "@/context/auth-context"
 
 interface BiasedSentence {
   original: string
@@ -66,6 +67,7 @@ const categoryLabels: Record<string, string> = {
 }
 
 export function BiasChecker() {
+  const { user } = useAuth()
   const [text, setText] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -154,10 +156,9 @@ export function BiasChecker() {
         setHitlSession(data as HITLSessionData)
 
         // Cache the analyzed document
-        if (file) {
-          addDocumentToCache({
+        if (file && user?.id) {
+          addAnalyzedDocument(user.id, {
             filename: data.filename || file.name,
-            type: "bias-detection",
             result: {
               totalSentences: data.total_sentences,
               biasedCount: data.biased_count,
@@ -171,10 +172,9 @@ export function BiasChecker() {
         setResult(data as BiasAnalysisResult)
 
         // Cache the analyzed document
-        if (file) {
-          addDocumentToCache({
+        if (file && user?.id) {
+          addAnalyzedDocument(user.id, {
             filename: data.filename || file.name,
-            type: "bias-detection",
             result: {
               totalSentences: data.totalSentences,
               biasedCount: data.biasedCount,

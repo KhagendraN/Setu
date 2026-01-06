@@ -62,6 +62,7 @@ export function LawChatbot() {
   const [showLetterDialog, setShowLetterDialog] = useState(false)
   const [pendingAction, setPendingAction] = useState<SuggestedAction | null>(null)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [showAllChats, setShowAllChats] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
@@ -205,6 +206,25 @@ ${meta.next_steps || ""}${sourcesText}${contextBadge}`.trim()
     }
   }
 
+  const generateTopicTitle = (message: string): string => {
+    // Extract key words from the message
+    const commonWords = ['what', 'how', 'when', 'where', 'who', 'why', 'is', 'are', 'can', 'do', 'does', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'my', 'i', 'me', 'about', 'please', 'help']
+    const words = message.toLowerCase().split(/\s+/).filter(word =>
+      word.length > 2 && !commonWords.includes(word) && /^[a-z]+$/.test(word)
+    )
+
+    // Take first 3 meaningful words or create from available words
+    if (words.length >= 3) {
+      return words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    } else if (words.length > 0) {
+      // If less than 3 words, use what we have
+      return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    } else {
+      // Fallback to truncated message
+      return message.slice(0, 30) + (message.length > 30 ? "..." : "")
+    }
+  }
+
   const createNewConversation = async (firstMessage: string) => {
     const token = localStorage.getItem("access_token")
     if (!token) {
@@ -217,7 +237,7 @@ ${meta.next_steps || ""}${sourcesText}${contextBadge}`.trim()
     }
 
     try {
-      const title = firstMessage.slice(0, 50) + (firstMessage.length > 50 ? "..." : "")
+      const title = generateTopicTitle(firstMessage)
       const response = await fetch(`${BACKEND_URL}/api/v1/chat-history/conversations`, {
         method: "POST",
         headers: getAuthHeaders(),
@@ -432,45 +452,59 @@ ${meta.next_steps || ""}${sourcesText}${contextBadge}`.trim()
             {isLoadingConversations ? (
               <p className="text-xs text-muted-foreground px-2">Loading...</p>
             ) : conversations.length > 0 ? (
-              conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={cn(
-                    "w-full rounded-lg transition-colors border flex items-center gap-2",
-                    conversationId === conv.id
-                      ? "bg-muted border-border"
-                      : "border-transparent hover:border-border hover:bg-muted/50"
-                  )}
-                >
-                  <button
-                    className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (confirm("Delete this conversation? This cannot be undone.")) {
-                        deleteConversation(conv.id)
-                      }
-                    }}
-                    title="Delete conversation"
+              <>
+                {(showAllChats ? conversations : conversations.slice(0, 4)).map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={cn(
+                      "w-full rounded-lg transition-colors border flex items-center gap-2",
+                      conversationId === conv.id
+                        ? "bg-muted border-border"
+                        : "border-transparent hover:border-border hover:bg-muted/50"
+                    )}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    className="flex-1 text-left p-3 pr-2"
-                    onClick={() => loadConversation(conv.id)}
+                    <button
+                      className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm("Delete this conversation? This cannot be undone.")) {
+                          deleteConversation(conv.id)
+                        }
+                      }}
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="flex-1 text-left p-3 pr-2 min-w-0"
+                      onClick={() => loadConversation(conv.id)}
+                    >
+                      <div className="flex items-center gap-2 mb-1 min-w-0">
+                        <MessageSquare className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-sm font-medium truncate block overflow-hidden text-ellipsis whitespace-nowrap">
+                          {conv.title}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground truncate">
+                          {new Date(conv.updated_at).toLocaleDateString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{conv.message_count} msgs</span>
+                      </div>
+                    </button>
+                  </div>
+                ))}
+                {conversations.length > 4 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-primary hover:text-primary/80 hover:bg-primary/10"
+                    onClick={() => setShowAllChats(!showAllChats)}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-sm font-medium truncate">{conv.title}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(conv.updated_at).toLocaleDateString()}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{conv.message_count} msgs</span>
-                    </div>
-                  </button>
-                </div>
-              ))
+                    {showAllChats ? "Show Less" : `Show More (${conversations.length - 4} more)`}
+                  </Button>
+                )}
+              </>
             ) : (
               <p className="text-xs text-muted-foreground px-2">No conversations yet</p>
             )}

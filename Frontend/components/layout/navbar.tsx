@@ -60,7 +60,7 @@ export function Navbar() {
             className="flex items-center gap-2 text-primary"
           >
             <Scale className="h-6 w-6" />
-            <span className="font-bold text-lg tracking-tight">Know Your Rights Nepal</span>
+            <span className="font-bold text-lg tracking-tight">SETU</span>
           </Link>
         </div>
 

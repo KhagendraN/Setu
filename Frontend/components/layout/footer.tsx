@@ -10,7 +10,7 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-primary">
               <Scale className="h-6 w-6" />
-              <span className="font-bold text-lg">Know Your Rights</span>
+              <span className="font-bold text-lg">SETU</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Empowering citizens of Nepal through legal literacy and digital assistance.
@@ -125,7 +125,7 @@ export function Footer() {
           </div> */}
         </div>
         <div className="mt-12 pt-8 border-t text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Know Your Rights Nepal. All rights reserved.
+          © {new Date().getFullYear()} SETU. All rights reserved.
         </div>
       </div>
     </footer>
