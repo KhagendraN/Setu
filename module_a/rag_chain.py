@@ -89,18 +89,34 @@ class LegalRAGChain:
             logger.error(f"Generation failed: {e}")
             explanation = "I apologize, but I encountered an error while generating the explanation. Please try again later."
         
-        # Step 3: Format output
+        # Step 3: Format output with improved source handling
+        sources = []
+        for i, chunk in enumerate(context_chunks):
+            source_file = chunk['metadata'].get('source_file', 'Legal Document')
+            article_section = chunk['metadata'].get('article_section')
+
+            # If no specific section, try to extract from the text
+            if not article_section and 'Article' in chunk['text'][:200]:
+                # Try to extract article number from beginning of text
+                import re
+                match = re.search(r'Article\s+(\d+[A-Za-z]?)', chunk['text'][:200])
+                if match:
+                    article_section = f"Article {match.group(1)}"
+
+            # Create source entry
+            source_entry = {
+                'file': source_file,
+                'section': article_section or f"Section {i+1}",
+                'relevance_score': 1.0 - chunk['distance']  # Approx score
+            }
+            sources.append(source_entry)
+
         result = {
             'query': query,
             'explanation': explanation,
-            'sources': [
-                {
-                    'file': chunk['metadata'].get('source_file'),
-                    'section': chunk['metadata'].get('article_section'),
-                    'relevance_score': 1.0 - chunk['distance']  # Approx score
-                }
-                for chunk in context_chunks
-            ]
+            'sources': sources
         }
-        
+
+        logger.info(f"Returning {len(sources)} sources")
+
         return result
