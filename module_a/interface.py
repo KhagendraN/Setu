@@ -10,8 +10,10 @@ from typing import Dict, List, Any, Optional
 from .rag_chain import LegalRAGChain
 from .context_analyzer import ConversationContextAnalyzer
 from .config import LOG_LEVEL
+from .logging_setup import setup_logging
 
-# Configure logging
+# Configure logging with file output
+setup_logging("module_a.interface")
 logger = logging.getLogger(__name__)
 
 class LawExplanationAPI:

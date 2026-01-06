@@ -8,9 +8,18 @@ import logging
 import time
 from pathlib import Path
 
-from .config import CHUNKS_OUTPUT_FILE, LOG_LEVEL, LOG_FORMAT
+from .config import CHUNKS_OUTPUT_FILE, LOG_LEVEL, LOG_FORMAT, PINECONE_API_KEY
 from .embeddings import EmbeddingGenerator
 from .vector_db import LegalVectorDB
+
+# Try to import Pinecone, use it if API key is set
+try:
+    from .pinecone_vector_db import PineconeLegalVectorDB
+    USE_PINECONE = bool(PINECONE_API_KEY)
+except ImportError:
+    USE_PINECONE = False
+    PineconeLegalVectorDB = None 
+
 
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
@@ -68,8 +77,14 @@ def main():
         
         # Step 4: Initialize vector database
         print("\nStep 4: Initializing vector database...")
-        vector_db = LegalVectorDB()
-        print(f"✓ Database initialized at: {vector_db.persist_directory}")
+        if USE_PINECONE:
+            print("Using Pinecone cloud vector database...")
+            vector_db = PineconeLegalVectorDB()
+            print(f"✓ Connected to Pinecone index: {vector_db.index_name}")
+        else:
+            print("Using local ChromaDB vector database...")
+            vector_db = LegalVectorDB()
+            print(f"✓ Database initialized at: {vector_db.persist_directory}")
         
         # Step 5: Add chunks to database
         print("\nStep 5: Adding chunks to vector database...")
@@ -89,7 +104,10 @@ def main():
         print(f"Embedding dimension: {embedder.embedding_dim}")
         print(f"Embedding model: {embedder.model_name}")
         print(f"Build time: {elapsed_time:.2f} seconds")
-        print(f"Database location: {vector_db.persist_directory}")
+        if USE_PINECONE:
+            print(f"Database: Pinecone cloud index '{vector_db.index_name}'")
+        else:
+            print(f"Database location: {vector_db.persist_directory}")
         print("=" * 80)
         
         logger.info("=" * 80)

@@ -6,31 +6,97 @@ Orchestrates retrieval and generation for legal explanations
 import logging
 from typing import Dict, Any, List, Optional
 
-from .vector_db import LegalVectorDB
 from .embeddings import EmbeddingGenerator
 from .llm_client import MistralClient
 from .prompts import format_rag_prompt, LEGAL_SYSTEM_PROMPT
-from .config import DEFAULT_RETRIEVAL_K
+from .config import DEFAULT_RETRIEVAL_K, PINECONE_API_KEY
+
+# Import Pinecone - required for RAG chain
+try:
+    from .pinecone_vector_db import PineconeLegalVectorDB
+    PINECONE_AVAILABLE = True
+except ImportError:
+    PINECONE_AVAILABLE = False
+    PineconeLegalVectorDB = None
 
 logger = logging.getLogger(__name__)
+
+# Set up file logging
+def _setup_rag_logging():
+    """Ensure RAG chain logs are written to file"""
+    try:
+        from .logging_setup import setup_logging
+        setup_logging("module_a.rag_chain")
+    except Exception:
+        pass  # Fallback to default logging if setup fails
+
+_setup_rag_logging()
 
 
 class LegalRAGChain:
     """
     Retrieval-Augmented Generation Chain for Legal Explanations
     Combines Vector DB retrieval with Mistral LLM generation
+    
+    NOTE: This RAG chain uses Pinecone only. ChromaDB integration has been removed.
+    Make sure PINECONE_API_KEY is set before initializing.
     """
     
     def __init__(self):
         """Initialize the RAG chain components"""
         logger.info("Initializing Legal RAG Chain...")
         
+        # Check if Pinecone is available
+        if not PINECONE_AVAILABLE:
+            raise ImportError(
+                "Pinecone client not installed. "
+                "Install with: pip install pinecone-client[grpc]>=3.0.0"
+            )
+        
+        # Check if API key is configured
+        if not PINECONE_API_KEY:
+            raise ValueError(
+                "PINECONE_API_KEY must be set to use the RAG chain. "
+                "Set it as an environment variable or in a .env file. "
+                "Get your API key from: https://app.pinecone.io/"
+            )
+        
         # Initialize components
         self.embedder = EmbeddingGenerator()
-        self.vector_db = LegalVectorDB()
+        
+        # Initialize Pinecone vector database
+        logger.info("Initializing Pinecone vector database...")
+        try:
+            self.vector_db = PineconeLegalVectorDB()
+            logger.info("✓ Using Pinecone cloud vector database")
+        except Exception as e:
+            logger.error(f"Failed to initialize Pinecone: {e}")
+            raise RuntimeError(
+                f"Pinecone initialization failed: {e}. "
+                "Please check your API key and network connection. "
+                "See module_a/PINECONE_SETUP.md for setup instructions."
+            )
+        
         self.llm = MistralClient()
         
-        logger.info("RAG Chain initialized successfully")
+        logger.info("RAG Chain initialized successfully with Pinecone")
+    
+    def get_vector_db_info(self) -> Dict[str, Any]:
+        """
+        Get information about the Pinecone vector database
+        
+        Returns:
+            Dictionary with database type, name, and other info
+        """
+        info = {
+            "type": "Pinecone",
+            "class_name": type(self.vector_db).__name__,
+            "is_pinecone": True,
+            "index_name": getattr(self.vector_db, "index_name", "unknown"),
+            "vector_count": self.vector_db.get_count()
+        }
+        
+        return info
     
     def run(
         self, 

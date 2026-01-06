@@ -7,14 +7,31 @@ import os
 from pathlib import Path
 import re
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    # Load .env from project root (parent of module_a)
+    _BASE_DIR = Path(__file__).parent.parent
+    env_file = _BASE_DIR / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+    else:
+        # Also try loading from current directory
+        load_dotenv()
+except ImportError:
+    # python-dotenv not installed, skip .env loading
+    pass
+
 # Base paths
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data" / "module-A"
 LAW_DIR = DATA_DIR / "law"
 CHUNKS_DIR = DATA_DIR / "chunks"
+LOG_DIR = DATA_DIR / "logs"
 
 # Ensure output directory exists
 CHUNKS_DIR.mkdir(parents=True, exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Output file
 CHUNKS_OUTPUT_FILE = CHUNKS_DIR / "processed_chunks.json"
@@ -88,6 +105,9 @@ COMPILED_SECTION_PATTERNS = [re.compile(pattern, re.IGNORECASE) for pattern in S
 # Logging configuration
 LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FILE = LOG_DIR / "pinecone.log"
+LOG_FILE_MAX_BYTES = 10 * 1024 * 1024  # 10MB
+LOG_FILE_BACKUP_COUNT = 5  # Keep 5 backup files
 
 # PDF extraction settings
 PDF_EXTRACTION_METHOD = "pdfplumber"  # Options: "pdfplumber", "pypdf2"
@@ -96,7 +116,15 @@ PDF_FALLBACK_METHOD = "pypdf2"  # Fallback if primary fails
 # Vector database settings (Step 3)
 VECTOR_DB_DIR = DATA_DIR / "vector_db"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_DIMENSION = 384  # For all-MiniLM-L6-v2
 EMBEDDING_BATCH_SIZE = 32
+
+# Pinecone settings - Read from environment or set here
+# Get your API key from: https://app.pinecone.io/
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "nepal-legal-docs")
+PINECONE_TEXT_STORAGE_FILE = DATA_DIR / "pinecone_text_storage.json"
+
 
 # Retrieval settings
 DEFAULT_RETRIEVAL_K = 5  # Number of chunks to retrieve
