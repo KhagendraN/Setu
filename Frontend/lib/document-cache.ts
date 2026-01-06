@@ -1,13 +1,13 @@
 /**
  * Document Cache Utility
- * Stores analyzed documents in browser localStorage for dashboard statistics
+ * Stores analyzed documents and generated letters separately in browser localStorage
+ * Each user gets their own isolated storage
  */
 
 export interface AnalyzedDocument {
   id: string
   filename: string
   analyzedAt: string
-  type: "bias-detection" | "letter-generation"
   result: {
     totalSentences?: number
     biasedCount?: number
@@ -17,19 +17,34 @@ export interface AnalyzedDocument {
   sessionId?: string
 }
 
-const CACHE_KEY = "setu_analyzed_documents"
-const MAX_CACHE_SIZE = 100 // Maximum number of documents to store
+export interface GeneratedLetter {
+  id: string
+  filename: string
+  templateName: string
+  generatedAt: string
+  success: boolean
+}
+
+const MAX_CACHE_SIZE = 100 // Maximum number of items to store per user
 
 /**
- * Get all analyzed documents from cache
+ * Get storage keys for a specific user
  */
-export function getCachedDocuments(): AnalyzedDocument[] {
+const getAnalyzedDocumentsKey = (userId: string) => `user_${userId}_analyzed_documents`
+const getLettersGeneratedKey = (userId: string) => `user_${userId}_letters_generated`
+
+// ==================== ANALYZED DOCUMENTS ====================
+
+/**
+ * Get all analyzed documents for a user
+ */
+export function getAnalyzedDocuments(userId: string): AnalyzedDocument[] {
   try {
-    const cached = localStorage.getItem(CACHE_KEY)
+    const cached = localStorage.getItem(getAnalyzedDocumentsKey(userId))
     if (!cached) return []
     return JSON.parse(cached)
   } catch (error) {
-    console.error("Error reading document cache:", error)
+    console.error("Error reading analyzed documents cache:", error)
     return []
   }
 }
@@ -37,13 +52,16 @@ export function getCachedDocuments(): AnalyzedDocument[] {
 /**
  * Add a new analyzed document to cache
  */
-export function addDocumentToCache(document: Omit<AnalyzedDocument, "id" | "analyzedAt">): void {
+export function addAnalyzedDocument(
+  userId: string,
+  document: Omit<AnalyzedDocument, "id" | "analyzedAt">
+): void {
   try {
-    const documents = getCachedDocuments()
+    const documents = getAnalyzedDocuments(userId)
 
     const newDocument: AnalyzedDocument = {
       ...document,
-      id: generateDocumentId(),
+      id: generateId("doc"),
       analyzedAt: new Date().toISOString(),
     }
 
@@ -55,25 +73,23 @@ export function addDocumentToCache(document: Omit<AnalyzedDocument, "id" | "anal
       documents.splice(MAX_CACHE_SIZE)
     }
 
-    localStorage.setItem(CACHE_KEY, JSON.stringify(documents))
+    localStorage.setItem(getAnalyzedDocumentsKey(userId), JSON.stringify(documents))
   } catch (error) {
-    console.error("Error adding document to cache:", error)
+    console.error("Error adding analyzed document to cache:", error)
   }
 }
 
 /**
- * Get statistics about cached documents
+ * Get statistics about analyzed documents
  */
-export function getDocumentStats() {
-  const documents = getCachedDocuments()
+export function getAnalyzedDocumentsStats(userId: string) {
+  const documents = getAnalyzedDocuments(userId)
 
-  const biasDocuments = documents.filter(d => d.type === "bias-detection")
-  const totalAnalyzed = biasDocuments.length
-
+  const totalAnalyzed = documents.length
   let totalInclusive = 0
   let totalFlagged = 0
 
-  biasDocuments.forEach(doc => {
+  documents.forEach((doc) => {
     if (doc.result.biasedCount === 0) {
       totalInclusive++
     } else if (doc.result.biasedCount && doc.result.biasedCount > 0) {
@@ -81,45 +97,140 @@ export function getDocumentStats() {
     }
   })
 
-  const letterDocuments = documents.filter(d => d.type === "letter-generation")
-  const totalLetters = letterDocuments.length
-
   return {
     totalAnalyzed,
     totalInclusive,
     totalFlagged,
-    totalLetters,
-    allDocuments: documents,
   }
 }
 
 /**
- * Clear all cached documents
+ * Clear all analyzed documents for a user
  */
-export function clearDocumentCache(): void {
+export function clearAnalyzedDocuments(userId: string): void {
   try {
-    localStorage.removeItem(CACHE_KEY)
+    localStorage.removeItem(getAnalyzedDocumentsKey(userId))
   } catch (error) {
-    console.error("Error clearing document cache:", error)
+    console.error("Error clearing analyzed documents cache:", error)
   }
 }
 
+// ==================== GENERATED LETTERS ====================
+
 /**
- * Remove a specific document from cache
+ * Get all generated letters for a user
  */
-export function removeDocumentFromCache(documentId: string): void {
+export function getGeneratedLetters(userId: string): GeneratedLetter[] {
   try {
-    const documents = getCachedDocuments()
-    const filtered = documents.filter(d => d.id !== documentId)
-    localStorage.setItem(CACHE_KEY, JSON.stringify(filtered))
+    const cached = localStorage.getItem(getLettersGeneratedKey(userId))
+    if (!cached) return []
+    return JSON.parse(cached)
   } catch (error) {
-    console.error("Error removing document from cache:", error)
+    console.error("Error reading generated letters cache:", error)
+    return []
   }
 }
 
 /**
- * Generate a unique document ID
+ * Add a new generated letter to cache
  */
-function generateDocumentId(): string {
-  return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+export function addGeneratedLetter(
+  userId: string,
+  letter: Omit<GeneratedLetter, "id" | "generatedAt">
+): void {
+  try {
+    const letters = getGeneratedLetters(userId)
+
+    const newLetter: GeneratedLetter = {
+      ...letter,
+      id: generateId("letter"),
+      generatedAt: new Date().toISOString(),
+    }
+
+    // Add to beginning of array (most recent first)
+    letters.unshift(newLetter)
+
+    // Limit cache size
+    if (letters.length > MAX_CACHE_SIZE) {
+      letters.splice(MAX_CACHE_SIZE)
+    }
+
+    localStorage.setItem(getLettersGeneratedKey(userId), JSON.stringify(letters))
+  } catch (error) {
+    console.error("Error adding generated letter to cache:", error)
+  }
+}
+
+/**
+ * Get statistics about generated letters
+ */
+export function getGeneratedLettersStats(userId: string) {
+  const letters = getGeneratedLetters(userId)
+
+  return {
+    totalLetters: letters.length,
+  }
+}
+
+/**
+ * Clear all generated letters for a user
+ */
+export function clearGeneratedLetters(userId: string): void {
+  try {
+    localStorage.removeItem(getLettersGeneratedKey(userId))
+  } catch (error) {
+    console.error("Error clearing generated letters cache:", error)
+  }
+}
+
+// ==================== COMBINED STATS (for Dashboard) ====================
+
+/**
+ * Get combined statistics for dashboard
+ */
+export function getDocumentStats(userId: string) {
+  const analyzedStats = getAnalyzedDocumentsStats(userId)
+  const letterStats = getGeneratedLettersStats(userId)
+
+  return {
+    ...analyzedStats,
+    ...letterStats,
+  }
+}
+
+// ==================== USER CLEANUP ====================
+
+/**
+ * Clear all cached data for a specific user (useful for logout)
+ */
+export function clearUserCache(userId: string): void {
+  clearAnalyzedDocuments(userId)
+  clearGeneratedLetters(userId)
+}
+
+/**
+ * Clear all user caches (useful when switching users or full cleanup)
+ */
+export function clearAllUserCaches(): void {
+  try {
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        (key.startsWith("user_") && key.includes("_analyzed_documents")) ||
+        (key.startsWith("user_") && key.includes("_letters_generated"))
+      ) {
+        localStorage.removeItem(key)
+      }
+    })
+  } catch (error) {
+    console.error("Error clearing all user caches:", error)
+  }
+}
+
+// ==================== UTILITY ====================
+
+/**
+ * Generate a unique ID
+ */
+function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 }
