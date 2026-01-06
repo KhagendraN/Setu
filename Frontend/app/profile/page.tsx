@@ -143,6 +143,7 @@ export default function ProfilePage() {
                 <div>
                   <CardTitle className="text-2xl">{user.name}</CardTitle>
                   <CardDescription className="text-base mt-1">{user.email}</CardDescription>
+                  
                 </div>
               </div>
             </CardHeader>

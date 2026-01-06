@@ -24,6 +24,22 @@ export default function DashboardPage() {
     console.log("Token in localStorage:", localStorage.getItem('access_token'));
   }, [isLoading, user])
 
+  const [tips, setTips] = useState<any[]>([])
+  const [currentTipIndex, setCurrentTipIndex] = useState<number>(0)
+  const [showNepali, setShowNepali] = useState<boolean>(false)
+
+  useEffect(() => {
+    fetch("/data.json")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTips(data)
+          setCurrentTipIndex(Math.floor(Math.random() * data.length))
+        }
+      })
+      .catch((err) => console.error("Failed to load tips:", err))
+  }, [])
+
   if (!mounted || isLoading) return null
   if (!user) redirect("/login")
 
@@ -73,11 +89,6 @@ export default function DashboardPage() {
     },
   ]
 
-  const tips = [
-    "Always keep a signed copy of any legal notice you receive.",
-    "Property rights in Nepal are protected under the 2072 Constitution.",
-    "Labor laws require a 30-day notice for contract termination.",
-  ]
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -177,10 +188,44 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="relative">
-                  <p className="text-sm leading-relaxed opacity-90">{tips[0]}</p>
-                  <Button variant="secondary" size="sm" className="mt-4 w-full">
-                    View More Tips
-                  </Button>
+                  <p className="text-sm leading-relaxed opacity-90">
+                    {tips.length > 0 ? (showNepali ? tips[currentTipIndex]?.fact_np : tips[currentTipIndex]?.fact_en) : "Loading tip..."}
+                  </p>
+
+                  <div className="mt-4 w-full flex gap-3 items-center">
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white/95 rounded-lg px-4 py-2 flex items-center gap-3 justify-center shadow-md"
+                      onClick={() => {
+                        // pick a new random tip
+                        if (tips.length > 1) {
+                          let idx = Math.floor(Math.random() * tips.length)
+                          // avoid same index when possible
+                          if (tips.length > 1 && idx === currentTipIndex) idx = (idx + 1) % tips.length
+                          setCurrentTipIndex(idx)
+                          setShowNepali(false)
+                        }
+                      }}
+                      title={showNepali ? "View more tips (English)" : "थप सुझावहरू"}
+                    >
+                      <Lightbulb className="h-4 w-4 text-accent" />
+                      <span className="font-medium">
+                        {showNepali ? "View More Tips" : "थप सुझावहरू"}
+                      </span>
+                    </Button>
+
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-full w-12 h-12 flex items-center justify-center shadow ring-1 ring-white/10 hover:scale-105 transition-transform"
+                      onClick={() => setShowNepali((s) => !s)}
+                      aria-label={showNepali ? "Switch to English" : "नेपालीमा हेर्नुहोस्"}
+                      title={showNepali ? "Show in English" : "नेपालीमा हेर्नुहोस्"}
+                    >
+                      <span className="text-lg">{showNepali ? "EN" : "🇳🇵"}</span>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
