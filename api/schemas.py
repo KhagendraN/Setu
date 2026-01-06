@@ -185,7 +185,6 @@ class BiasReviewSession(BaseModel):
     original_filename: str
     sentences: List[BiasReviewItem]
     raw_text: str
-    pdf_bytes: Optional[bytes] = None
     created_at: str
     status: str = "pending_review"  # "pending_review", "in_progress", "completed"
 
@@ -224,11 +223,18 @@ class RegenerateSuggestionResponse(BaseModel):
 class GeneratePDFRequest(BaseModel):
     session_id: str
 
+class SentenceDetails(BaseModel):
+    sentence_id: str
+    original_sentence: str
+    final_sentence: str
+    is_biased: bool
+    was_modified: bool
+    category: Optional[str] = None
+
 class GeneratePDFResponse(BaseModel):
     success: bool
-    pdf_filename: Optional[str] = None
-    pdf_content: Optional[bytes] = None
     changes_applied: int
+    sentences: List[SentenceDetails]
     error: Optional[str] = None
 
 class SessionStatusResponse(BaseModel):
