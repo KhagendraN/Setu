@@ -49,9 +49,11 @@ export default function DashboardPage() {
       .catch((err) => console.error("Failed to load tips:", err))
 
     // Load document stats from cache
-    const stats = getDocumentStats()
-    setDocumentStats(stats)
-  }, [])
+    if (user?.id) {
+      const stats = getDocumentStats(user.id)
+      setDocumentStats(stats)
+    }
+  }, [user])
 
   // Fetch total consultations count and recent activities
   useEffect(() => {
@@ -206,16 +208,16 @@ export default function DashboardPage() {
                   <CardTitle>Recent Activity</CardTitle>
                   <CardDescription>Your latest interactions with our legal tools.</CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" className="text-primary">
-                  View All
+                <Button variant="ghost" size="sm" className="text-primary" asChild>
+                  <Link href="/recent-activity">View All</Link>
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                   {recentActivities.length > 0 ? (
                     recentActivities.map((activity, i) => (
                       <Link key={i} href="/chatbot">
-                        <div className="flex items-start gap-4 group cursor-pointer">
+                        <div className="flex items-start gap-4 group cursor-pointer p-3 rounded-lg hover:bg-muted/50 transition-all border border-transparent hover:border-primary/20">
                           <div className={cn("p-2 rounded-lg border border-transparent transition-colors", activity.color)}>
                             <activity.icon className="h-5 w-5" />
                           </div>
@@ -300,7 +302,7 @@ export default function DashboardPage() {
                     </Link>
                   </Button>
                   <Button variant="outline" className="w-full justify-start text-sm bg-transparent" asChild>
-                    <Link href="/resources">
+                    <Link href="/chatbot">
                       <BookOpen className="mr-2 h-4 w-4 text-success" />
                       Browse Legal Guides
                     </Link>

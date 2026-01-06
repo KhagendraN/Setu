@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/auth-context"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -6,6 +11,37 @@ import { MessageSquare, Search, BookOpen, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 export default function Home() {
+  const router = useRouter()
+  const { user, isLoading } = useAuth()
+
+  useEffect(() => {
+    // Redirect logged-in users to dashboard
+    if (!isLoading && user) {
+      router.push("/dashboard")
+    }
+  }, [user, isLoading, router])
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  // Don't render the landing page if user is logged in (will redirect)
+  if (user) {
+    return null
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -19,7 +55,7 @@ export default function Home() {
               Trusted by 5,000+ Nepali Citizens
             </div> */}
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-balance">
-              Know Your Rights - <span className="text-primary">Nepal Legal Assistance</span>
+              SETU - <span className="text-primary">Your Legal Assistance</span>
             </h1>
             <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl text-pretty">
               Your digital gateway to legal justice in Nepal. Access our AI-powered law assistant, analyze legal notices
