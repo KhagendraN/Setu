@@ -54,14 +54,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const cachedDetails = localStorage.getItem("know_rights_user_details")
         const details = cachedDetails ? JSON.parse(cachedDetails) : undefined
 
-        // Try to get stored user data from localStorage
+        // Try to get stored user data from localStorage and prefer stored email/name when available
         const storedUserData = localStorage.getItem("user")
         let userName = decoded.sub.split("@")[0] // default fallback
+        let userEmail = decoded.sub
 
         if (storedUserData) {
           try {
-            const parsedUser = JSON.parse(storedUserData)
+            const parsedUser: any = JSON.parse(storedUserData)
             userName = parsedUser.full_name || parsedUser.name || userName
+            userEmail = parsedUser.email || parsedUser.email_address || parsedUser.emailAddress || userEmail
           } catch (e) {
             console.error("Failed to parse user data:", e)
           }
@@ -69,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser({
           id: decoded.sub,
-          email: decoded.sub,
+          email: userEmail,
           name: userName,
           role: "user",
           isFirstTime: !details,
@@ -90,20 +92,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const decoded = decodeToken(token)
     if (decoded) {
-      // Try to get stored user data from localStorage
+      // Try to get stored user data from localStorage and prefer stored email/name when available
       const storedUserData = localStorage.getItem("user")
       let userName = decoded.sub.split("@")[0] // default fallback
+      let userEmail = decoded.sub
 
       console.log("Auth Context - Stored user data:", storedUserData)
 
       if (storedUserData) {
         try {
-          const parsedUser = JSON.parse(storedUserData)
+          const parsedUser: any = JSON.parse(storedUserData)
           console.log("Auth Context - Parsed user:", parsedUser)
           console.log("Auth Context - full_name:", parsedUser.full_name)
           console.log("Auth Context - name:", parsedUser.name)
           userName = parsedUser.full_name || parsedUser.name || userName
+          userEmail = parsedUser.email || parsedUser.email_address || parsedUser.emailAddress || userEmail
           console.log("Auth Context - Final userName:", userName)
+          console.log("Auth Context - Final userEmail:", userEmail)
         } catch (e) {
           console.error("Failed to parse user data:", e)
         }
@@ -111,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser({
         id: decoded.sub,
-        email: decoded.sub,
+        email: userEmail,
         name: userName,
         role: "user",
         isFirstTime: true,
