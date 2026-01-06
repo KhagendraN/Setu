@@ -9,9 +9,64 @@ from api.schemas import (
     MessageResponse
 )
 from api.routes.supabase_auth import get_supabase_admin
-from typing import List
+from typing import List, Dict
 
 router = APIRouter()
+
+
+# ============================================================
+# Helper Functions
+# ============================================================
+
+async def get_recent_context(
+    conversation_id: str,
+    user_id: str,
+    limit: int = 5
+) -> List[Dict[str, str]]:
+    """
+    Fetch recent conversation messages for context.
+
+    Args:
+        conversation_id: The conversation ID
+        user_id: The user ID (for authorization)
+        limit: Number of recent messages to fetch (default: 5)
+
+    Returns:
+        List of messages in format [{"role": "user"/"assistant", "content": "..."}]
+    """
+    try:
+        supabase = get_supabase_admin()
+
+        # Verify conversation ownership
+        conv_check = supabase.table("chat_conversations")\
+            .select("id")\
+            .eq("id", conversation_id)\
+            .eq("user_id", user_id)\
+            .execute()
+
+        if not conv_check.data:
+            return []
+
+        # Get recent messages, ordered by timestamp descending, then reverse
+        result = supabase.table("chat_messages")\
+            .select("role, content")\
+            .eq("conversation_id", conversation_id)\
+            .order("timestamp", desc=True)\
+            .limit(limit)\
+            .execute()
+
+        if not result.data:
+            return []
+
+        # Reverse to get chronological order (oldest to newest)
+        messages = list(reversed(result.data))
+
+        return messages
+
+    except Exception as e:
+        # Log error but don't fail - just return empty context
+        print(f"Error fetching conversation context: {e}")
+        return []
 
 # ============================================================
 # Conversation Endpoints
