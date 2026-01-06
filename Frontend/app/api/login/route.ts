@@ -4,7 +4,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const backendRes = await fetch("http://localhost:8000/login", {
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+    const backendRes = await fetch(`${BACKEND_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
