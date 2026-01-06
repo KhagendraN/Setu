@@ -39,6 +39,7 @@ interface HITLReviewItem {
   suggestion: string | null
   approved_suggestion: string | null
   status: "pending" | "approved" | "needs_regeneration"
+  explanation?: string
 }
 
 interface HITLSessionData {
@@ -66,6 +67,20 @@ const categoryLabels: Record<string, string> = {
   Disablity: "Disability Bias",
 }
 
+// Explanation for each bias category
+const categoryExplanations: Record<string, string> = {
+  gender: "This sentence contains gender-based bias, using language that may stereotype, exclude, or unfairly characterize individuals based on their gender.",
+  religional: "This sentence contains religious bias, using language that may discriminate against or unfairly characterize individuals based on their religious beliefs.",
+  caste: "This sentence contains caste-based bias, using language that may perpetuate discrimination or unfair treatment based on caste identity.",
+  religion: "This sentence contains religious bias, with language that may show prejudice or discrimination based on religious affiliation.",
+  appearence: "This sentence contains appearance-based bias, using language that may judge or discriminate based on physical appearance or looks.",
+  socialstatus: "This sentence contains social status bias, using language that may discriminate or show prejudice based on socioeconomic status or class.",
+  political: "This sentence contains political bias, showing unfair preference or prejudice toward a particular political viewpoint or party.",
+  Age: "This sentence contains age-based bias, using language that may stereotype or discriminate based on age or generation.",
+  Disablity: "This sentence contains disability-based bias, using language that may discriminate against or unfairly characterize individuals with disabilities.",
+  amiguity: "This sentence contains ambiguous language that may lead to misinterpretation or unclear bias.",
+}
+
 export function BiasChecker() {
   const { user } = useAuth()
   const [text, setText] = useState("")
@@ -79,6 +94,7 @@ export function BiasChecker() {
   const [useHITL, setUseHITL] = useState(true) // Enable HITL by default for PDFs
   const [hitlSession, setHitlSession] = useState<HITLSessionData | null>(null)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [isGeneratingTXT, setIsGeneratingTXT] = useState(false)
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -317,11 +333,16 @@ export function BiasChecker() {
     }
   }
 
-  const handleGeneratePDF = async () => {
-    if (!hitlSession) return
+  const handleGenerateTXT = async () => {
+    if (!hitlSession || !isReadyForPDF()) {
+      console.log("Not ready for TXT generation")
+      return
+    }
 
-    setIsGeneratingPDF(true)
+    setIsGeneratingTXT(true)
     try {
+      console.log("Starting TXT generation...")
+
       const token = localStorage.getItem("access_token")
       const headers: Record<string, string> = {
         "Content-Type": "application/json"
@@ -330,7 +351,7 @@ export function BiasChecker() {
         headers["Authorization"] = `Bearer ${token}`
       }
 
-      const response = await fetch("/api/bias-detection-hitl/generate-pdf", {
+      const response = await fetch("/api/bias-detection-hitl/generate-txt", {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -339,35 +360,82 @@ export function BiasChecker() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || "Failed to generate PDF")
+        throw new Error("Failed to generate TXT")
       }
 
-      // Download the PDF
+      // Get the TXT blob
       const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-
-      const contentDisposition = response.headers.get("Content-Disposition")
-      const filename = contentDisposition
-        ? contentDisposition.split("filename=")[1]?.replace(/"/g, "")
-        : `debiased_${hitlSession.filename}`
-
-      link.setAttribute("download", filename)
+      link.download = `debiased-${hitlSession.filename.replace('.pdf', '.txt')}`
       document.body.appendChild(link)
       link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
 
-      alert("PDF generated successfully!")
+      console.log("TXT file generated successfully")
     } catch (error) {
-      console.error("[Generate PDF Error]:", error)
-      alert(error instanceof Error ? error.message : "Failed to generate PDF")
+      console.error("Error generating TXT:", error)
+      alert("Failed to generate TXT. Please try again.")
+    } finally {
+      setIsGeneratingTXT(false)
+    }
+  }
+
+  const handleGeneratePDF = async () => {
+    if (!hitlSession || !isReadyForPDF()) {
+      console.log("Not ready for PDF generation")
+      return
+    }
+
+    setIsGeneratingPDF(true)
+    try {
+      console.log("Starting PDF generation...")
+
+      const token = localStorage.getItem("access_token")
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      }
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+
+      const response = await fetch("/api/bias-detection-hitl/generate-pdf-frontend", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          session_id: hitlSession.session_id
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF")
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `debiased-${hitlSession.filename || "document"}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log("PDF generated successfully")
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+      alert("Failed to generate PDF. Please try again.")
     } finally {
       setIsGeneratingPDF(false)
     }
   }
+
+  
+
+  
 
   const getPendingCount = () => {
     if (!hitlSession) return 0
@@ -568,6 +636,16 @@ export function BiasChecker() {
                               </p>
                             </div>
 
+                            {/* Explanation - Why is this biased? */}
+                            <div>
+                              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">
+                                Why is this biased?
+                              </p>
+                              <p className="text-xs leading-relaxed bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100">
+                                {item.explanation || categoryExplanations[item.category] || "This sentence has been flagged for potential bias."}
+                              </p>
+                            </div>
+
                             {/* Suggestion */}
                             {item.suggestion && (
                               <div>
@@ -637,10 +715,33 @@ export function BiasChecker() {
                   </div>
                 </div>
 
-                {/* Generate PDF Button */}
-                <div className="pt-4">
+                {/* Generate Buttons */}
+                <div className="pt-4 space-y-3">
                   <Button
                     className="w-full h-12 text-lg"
+                    onClick={handleGenerateTXT}
+                    disabled={!isReadyForPDF() || isGeneratingTXT}
+                  >
+                    {isGeneratingTXT ? (
+                      <>
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Generating Report...
+                      </>
+                    ) : !isReadyForPDF() ? (
+                      <>
+                        <AlertCircle className="mr-2 h-5 w-5" />
+                        Review All Sentences First
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-5 w-5" />
+                        Generate TXT Report
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    className="w-full h-12 text-lg"
+                    variant="outline"
                     onClick={handleGeneratePDF}
                     disabled={!isReadyForPDF() || isGeneratingPDF}
                   >
