@@ -1,6 +1,23 @@
 """
-PDF Regenerator Module
-Handles regenerating PDFs with approved bias-free sentences using PyMuPDF
+PDF Regenerator Module - DEPRECATED / LEGACY CODE
+
+WARNING: This module is NO LONGER USED in the current workflow.
+
+The bias detection HITL workflow now returns JSON responses with sentence details
+instead of generating PDFs. This file is kept for reference or potential future use
+if PDF generation is needed again.
+
+Current workflow:
+1. Upload PDF → Extract sentences (PDFProcessor)
+2. Detect bias → Generate suggestions (LLM)
+3. Human review → Approve/reject suggestions
+4. Final response → JSON with sentences (NOT PDF)
+
+If you need to regenerate PDFs in the future, this module provides:
+- regenerate_pdf(): Replace biased sentences in original PDF
+- create_simple_pdf_from_sentences(): Create new PDF from sentences
+
+This module can be safely deleted if PDF generation will never be needed.
 """
 
 import logging
@@ -51,7 +68,7 @@ class PDFRegenerator:
         original_pdf_bytes: bytes,
         sentences: List[BiasReviewItem],
         output_filename: str = "debiased_document.pdf"
-    ) -> Tuple[bool, Optional[bytes], Optional[str]]:
+    ) -> Tuple[bool, Optional[bytes], Optional[str], Optional[List[Dict]]]:
         """
         Regenerate PDF with approved sentences replacing biased ones.
 
@@ -61,7 +78,7 @@ class PDFRegenerator:
             output_filename: Name for the output PDF file
 
         Returns:
-            Tuple of (success, pdf_bytes, error_message)
+            Tuple of (success, pdf_bytes, error_message, sentence_details)
         """
         try:
             logger.info(f"Starting PDF regeneration for {output_filename}")
@@ -69,18 +86,36 @@ class PDFRegenerator:
             # Open the original PDF from bytes
             doc = fitz.open(stream=original_pdf_bytes, filetype="pdf")
 
-            # Count replacements
+            # Count replacements and track sentence details
             replacements_made = 0
+            sentence_details = []
 
             # Process each sentence that has an approved suggestion
             for item in sentences:
+                was_modified = False
+                final_sentence = item.original_sentence
+
                 if item.is_biased and item.approved_suggestion and item.status == "approved":
                     # Replace the biased sentence with approved suggestion
-                    replacements_made += self._replace_text_in_pdf(
+                    count = self._replace_text_in_pdf(
                         doc,
                         item.original_sentence,
                         item.approved_suggestion
                     )
+                    replacements_made += count
+                    if count > 0:
+                        was_modified = True
+                        final_sentence = item.approved_suggestion
+
+                # Add sentence details
+                sentence_details.append({
+                    "sentence_id": item.sentence_id,
+                    "original_sentence": item.original_sentence,
+                    "final_sentence": final_sentence,
+                    "is_biased": item.is_biased,
+                    "was_modified": was_modified,
+                    "category": item.category if item.is_biased else None
+                })
 
             logger.info(f"Made {replacements_made} text replacements in PDF")
 
@@ -88,12 +123,12 @@ class PDFRegenerator:
             output_bytes = doc.tobytes()
             doc.close()
 
-            return (True, output_bytes, None)
+            return (True, output_bytes, None, sentence_details)
 
         except Exception as e:
             error_msg = f"PDF regeneration failed: {str(e)}"
             logger.error(error_msg)
-            return (False, None, error_msg)
+            return (False, None, error_msg, None)
 
     def _replace_text_in_pdf(
         self,
@@ -160,7 +195,7 @@ class PDFRegenerator:
         self,
         sentences: List[BiasReviewItem],
         filename: str = "debiased_document.pdf"
-    ) -> Tuple[bool, Optional[bytes], Optional[str]]:
+    ) -> Tuple[bool, Optional[bytes], Optional[str], Optional[List[Dict]]]:
         """
         Create a simple new PDF from sentences (fallback method).
         Uses approved suggestions for biased sentences, original text for neutral ones.
@@ -170,7 +205,7 @@ class PDFRegenerator:
             filename: Output filename
 
         Returns:
-            Tuple of (success, pdf_bytes, error_message)
+            Tuple of (success, pdf_bytes, error_message, sentence_details)
         """
         try:
             logger.info("Creating new PDF from sentences")
@@ -186,10 +221,24 @@ class PDFRegenerator:
             font_size = 12
             line_height = 20
 
+            # Track sentence details
+            sentence_details = []
+
             # Write each sentence
             for item in sentences:
                 # Use approved suggestion if available, otherwise original
                 text = item.approved_suggestion if (item.is_biased and item.approved_suggestion) else item.original_sentence
+                was_modified = item.is_biased and item.approved_suggestion is not None
+
+                # Add sentence details
+                sentence_details.append({
+                    "sentence_id": item.sentence_id,
+                    "original_sentence": item.original_sentence,
+                    "final_sentence": text,
+                    "is_biased": item.is_biased,
+                    "was_modified": was_modified,
+                    "category": item.category if item.is_biased else None
+                })
 
                 # Check if we need a new page
                 if y_position > 750:  # Near bottom of page
@@ -213,9 +262,9 @@ class PDFRegenerator:
             doc.close()
 
             logger.info("Successfully created new PDF")
-            return (True, output_bytes, None)
+            return (True, output_bytes, None, sentence_details)
 
         except Exception as e:
             error_msg = f"Failed to create PDF from sentences: {str(e)}"
             logger.error(error_msg)
-            return (False, None, error_msg)
+            return (False, None, error_msg, None)

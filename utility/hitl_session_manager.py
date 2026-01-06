@@ -11,7 +11,7 @@ from api.schemas import BiasReviewSession, BiasReviewItem
 class HITLSessionManager:
     """
     Manages in-memory sessions for human-in-the-loop bias detection workflow.
-    Stores session state between PDF upload, review, and final PDF generation.
+    Stores session state between PDF upload, review, and final response generation.
     """
 
     def __init__(self):
@@ -22,8 +22,7 @@ class HITLSessionManager:
         self,
         filename: str,
         sentences: list,
-        raw_text: str,
-        pdf_bytes: bytes
+        raw_text: str
     ) -> BiasReviewSession:
         """
         Create a new review session.
@@ -32,7 +31,6 @@ class HITLSessionManager:
             filename: Original PDF filename
             sentences: List of BiasReviewItem objects
             raw_text: Raw extracted text from PDF
-            pdf_bytes: Original PDF content as bytes
 
         Returns:
             BiasReviewSession object with generated session_id
@@ -44,7 +42,6 @@ class HITLSessionManager:
             original_filename=filename,
             sentences=sentences,
             raw_text=raw_text,
-            pdf_bytes=pdf_bytes,
             created_at=datetime.utcnow().isoformat(),
             status="pending_review"
         )
