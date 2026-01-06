@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
+import { clearUserCache } from "@/lib/document-cache"
 
 export interface User {
   id: string
@@ -92,6 +93,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const decoded = decodeToken(token)
     if (decoded) {
+      // Check if a different user is logging in
+      const previousUserId = user?.id
+      if (previousUserId && previousUserId !== decoded.sub) {
+        // Different user - clear previous user's cache
+        clearUserCache(previousUserId)
+      }
+
       // Try to get stored user data from localStorage and prefer stored email/name when available
       const storedUserData = localStorage.getItem("user")
       let userName = decoded.sub.split("@")[0] // default fallback
@@ -125,9 +133,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
+    // Clear user-specific caches before logout
+    if (user?.id) {
+      clearUserCache(user.id)
+    }
+
     setUser(null)
     localStorage.removeItem("access_token")
     localStorage.removeItem("know_rights_user_details")
+    localStorage.removeItem("user")
   }
 
   const updateUserDetails = async (details: User["details"]) => {
