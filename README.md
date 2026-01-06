@@ -16,7 +16,7 @@ Setu is a comprehensive legal assistance platform that leverages AI/ML to help N
 [GitHub](https://github.com/SangamSilwal) | [LinkedIn](https://www.linkedin.com/in/sangam-silwal-b0654b316?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
 
 ### Sambhav Regmi
-[GitHub](https://github.com/sambhav605) | [Portfolio](sambhavregmi.com.np) | [LinkedIn](https://www.linkedin.com/in/sambhav-regmi-350512321?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
+[GitHub](https://github.com/sambhav605) | [Portfolio](https://sambhavregmi.com.np/) | [LinkedIn](https://www.linkedin.com/in/sambhav-regmi-350512321?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
 
 ### Rupak Adhikari
 [GitHub](https://github.com/sampletestg) | [LinkedIn](https://www.linkedin.com/in/rupak-adhikari-40b436344/)
