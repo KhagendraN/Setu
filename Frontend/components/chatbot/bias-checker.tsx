@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { AlertCircle, Info, Search, Upload, X, CheckCircle2, ShieldAlert, FileText, Download, RefreshCw, ThumbsUp, ThumbsDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { addDocumentToCache } from "@/lib/document-cache"
 
 interface BiasedSentence {
   original: string
@@ -151,8 +152,37 @@ export function BiasChecker() {
       // Check if response is HITL session data
       if (data.session_id && data.sentences) {
         setHitlSession(data as HITLSessionData)
+
+        // Cache the analyzed document
+        if (file) {
+          addDocumentToCache({
+            filename: data.filename || file.name,
+            type: "bias-detection",
+            result: {
+              totalSentences: data.total_sentences,
+              biasedCount: data.biased_count,
+              neutralCount: data.neutral_count,
+              success: data.success,
+            },
+            sessionId: data.session_id,
+          })
+        }
       } else {
         setResult(data as BiasAnalysisResult)
+
+        // Cache the analyzed document
+        if (file) {
+          addDocumentToCache({
+            filename: data.filename || file.name,
+            type: "bias-detection",
+            result: {
+              totalSentences: data.totalSentences,
+              biasedCount: data.biasedCount,
+              neutralCount: data.unbiasedCount,
+              success: data.success,
+            },
+          })
+        }
       }
     } catch (error) {
       console.error("[Bias Detection Error]:", error)

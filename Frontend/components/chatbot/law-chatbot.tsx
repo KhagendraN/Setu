@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Send, Scale, User, Download, Plus, MessageSquare, Trash2 } from "lucide-react"
+import { Send, Scale, User, Download, Plus, MessageSquare, Trash2, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -27,6 +27,14 @@ interface Message {
   content: string
   timestamp: Date
   suggested_action?: SuggestedAction
+  metadata?: {
+    summary?: string
+    key_point?: string
+    next_steps?: string
+    sources?: any[]
+    context_used?: boolean
+    is_non_legal?: boolean
+  }
 }
 
 interface Conversation {
@@ -53,6 +61,7 @@ export function LawChatbot() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(false)
   const [showLetterDialog, setShowLetterDialog] = useState(false)
   const [pendingAction, setPendingAction] = useState<SuggestedAction | null>(null)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
@@ -93,13 +102,16 @@ export function LawChatbot() {
     }
   }
 
+  // Use public env var so frontend can target backend in different environments
+  const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || "http://localhost:8000"
+
   const loadConversations = async () => {
     const token = localStorage.getItem("access_token")
     if (!token) return
 
     setIsLoadingConversations(true)
     try {
-      const response = await fetch("http://localhost:8000/api/v1/chat-history/conversations", {
+      const response = await fetch(`${BACKEND_URL}/api/v1/chat-history/conversations`, {
         headers: getAuthHeaders(),
       })
 
@@ -116,20 +128,72 @@ export function LawChatbot() {
 
   const loadConversation = async (convId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/chat-history/conversations/${convId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/v1/chat-history/conversations/${convId}`, {
         headers: getAuthHeaders(),
       })
 
       if (response.ok) {
         const data = await response.json()
-        const loadedMessages: Message[] = data.messages.map((msg: any) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.timestamp),
-        }))
+        const loadedMessages: Message[] = data.messages.map((msg: any) => {
+          let content = msg.content
+
+          // If this is an assistant message with metadata, reconstruct the full formatted content
+          if (msg.role === "assistant" && msg.metadata) {
+            const meta = msg.metadata
+
+            // Check if metadata has the structured fields
+            if (meta.summary || meta.key_point || meta.next_steps) {
+              // Format sources
+              let sourcesText = ""
+              if (meta.sources && meta.sources.length > 0) {
+                const formattedSources = meta.sources
+                  .filter((s: any) => s && (s.file || s.section))
+                  .map((s: any, i: number) => {
+                    let fileName = "Legal Document"
+                    if (s.file) {
+                      fileName = s.file
+                        .replace(/_en\.pdf$/i, "")
+                        .replace(/\.pdf$/i, "")
+                        .replace(/_/g, " ")
+                    }
+                    const section = s.section || s.article_section || "General Reference"
+                    return `   ${i + 1}. **${fileName}** (${section})`
+                  })
+                  .join("\n")
+
+                if (formattedSources) {
+                  sourcesText = `\n\n### 📚 Resources\n${formattedSources}`
+                }
+              }
+
+              const contextBadge = meta.context_used ? "\n\n> 💡 *Used conversation context*" : ""
+
+              // Reconstruct the full formatted content
+              content = `### 📝 Summary\n${meta.summary || ""}
+
+### 💬 Detailed Explanation
+${msg.content}
+
+### 🔑 Key Points
+- ${meta.key_point || ""}
+
+### 📋 Next Steps
+${meta.next_steps || ""}${sourcesText}${contextBadge}`.trim()
+            }
+          }
+
+          return {
+            id: msg.id,
+            role: msg.role,
+            content: content,
+            timestamp: new Date(msg.timestamp),
+            metadata: msg.metadata,
+          }
+        })
         setMessages(loadedMessages)
         setConversationId(convId)
+        // Close mobile sidebar after loading conversation
+        setIsMobileSidebarOpen(false)
       }
     } catch (error) {
       console.error("Failed to load conversation:", error)
@@ -154,7 +218,7 @@ export function LawChatbot() {
 
     try {
       const title = firstMessage.slice(0, 50) + (firstMessage.length > 50 ? "..." : "")
-      const response = await fetch("http://localhost:8000/api/v1/chat-history/conversations", {
+      const response = await fetch(`${BACKEND_URL}/api/v1/chat-history/conversations`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ title }),
@@ -174,7 +238,7 @@ export function LawChatbot() {
 
   const deleteConversation = async (convId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/chat-history/conversations/${convId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/v1/chat-history/conversations/${convId}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       })
@@ -204,6 +268,7 @@ export function LawChatbot() {
       })
     }
   }
+
 
   const confirmLetterGeneration = () => {
     if (!pendingAction) return
@@ -240,6 +305,8 @@ export function LawChatbot() {
       },
     ])
     setConversationId(null)
+    // Close mobile sidebar after starting new chat
+    setIsMobileSidebarOpen(false)
   }
 
   const handleSend = async (content: string) => {
@@ -325,9 +392,37 @@ export function LawChatbot() {
 
   return (
     <div className="w-full max-w-[1600px] mx-auto">
-      <div className="flex h-[calc(100vh-10rem)] gap-4">
+      <div className="flex h-[calc(100vh-10rem)] gap-4 relative">
+        {/* Mobile Sidebar Overlay */}
+        {isMobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar - Chat History */}
-        <div className="hidden lg:flex w-64 flex-col gap-4 border-r pr-4">
+        <div
+          className={cn(
+            "w-64 flex-col gap-4 border-r pr-4 bg-background z-50",
+            "lg:flex lg:relative lg:translate-x-0",
+            "fixed left-0 top-0 h-full transition-transform duration-300 ease-in-out p-4 lg:p-0",
+            isMobileSidebarOpen ? "flex translate-x-0" : "hidden lg:flex -translate-x-full lg:translate-x-0"
+          )}
+        >
+        {/* Close button for mobile */}
+        <div className="flex items-center justify-between lg:hidden mb-4">
+          <h3 className="font-semibold">Chat History</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
         <Button className="w-full justify-start gap-2 bg-primary" onClick={startNewChat}>
           <Plus className="h-4 w-4" /> New Conversation
         </Button>
@@ -341,27 +436,14 @@ export function LawChatbot() {
                 <div
                   key={conv.id}
                   className={cn(
-                    "w-full p-3 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border group relative",
-                    conversationId === conv.id && "bg-muted border-border"
+                    "w-full rounded-lg transition-colors border flex items-center gap-2",
+                    conversationId === conv.id
+                      ? "bg-muted border-border"
+                      : "border-transparent hover:border-border hover:bg-muted/50"
                   )}
                 >
                   <button
-                    className="w-full text-left"
-                    onClick={() => loadConversation(conv.id)}
-                  >
-                    <div className="flex items-center gap-2 mb-1 pr-8">
-                      <MessageSquare className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium truncate">{conv.title}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(conv.updated_at).toLocaleDateString()}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{conv.message_count} msgs</span>
-                    </div>
-                  </button>
-                  <button
-                    className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
+                    className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
                     onClick={(e) => {
                       e.stopPropagation()
                       if (confirm("Delete this conversation? This cannot be undone.")) {
@@ -370,7 +452,22 @@ export function LawChatbot() {
                     }}
                     title="Delete conversation"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    className="flex-1 text-left p-3 pr-2"
+                    onClick={() => loadConversation(conv.id)}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm font-medium truncate">{conv.title}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(conv.updated_at).toLocaleDateString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{conv.message_count} msgs</span>
+                    </div>
                   </button>
                 </div>
               ))
@@ -385,6 +482,17 @@ export function LawChatbot() {
       <Card className="flex-1 flex flex-col shadow-lg border-primary/10 overflow-hidden bg-card/50 backdrop-blur-sm">
         <CardHeader className="border-b py-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              title="Open chat history"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <Scale className="h-5 w-5" />
             </div>
@@ -396,10 +504,12 @@ export function LawChatbot() {
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={exportChat} title="Export conversation">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={exportChat} title="Export conversation">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent className="flex-1 p-0 overflow-hidden">

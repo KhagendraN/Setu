@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import html2canvas from "html2canvas"
+import { addDocumentToCache } from "@/lib/document-cache"
 
 type MessageRole = "user" | "assistant" | "system"
 
@@ -247,6 +248,15 @@ export function LetterGenerator() {
           "assistant",
           `✅ Your letter has been generated successfully! You can download it using the button below.\n\n**Preview:**\n\n${data.letter}`
         )
+
+        // Cache the generated letter
+        addDocumentToCache({
+          filename: `${templateName || "letter"}_${Date.now()}.txt`,
+          type: "letter-generation",
+          result: {
+            success: true,
+          },
+        })
       } else {
         addMessage("assistant", "Failed to generate the letter. Please try again.")
         setConversationState("initial")
