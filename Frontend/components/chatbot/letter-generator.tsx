@@ -65,6 +65,24 @@ export function LetterGenerator() {
     return () => clearTimeout(timer)
   }, [messages, isTyping])
 
+  // Auto-fill prompt from chatbot redirect
+  useEffect(() => {
+    const prompt = localStorage.getItem("letter_generation_prompt")
+    const letterType = localStorage.getItem("letter_type")
+
+    if (prompt) {
+      // Clear the stored data
+      localStorage.removeItem("letter_generation_prompt")
+      localStorage.removeItem("letter_type")
+
+      // Auto-send the prompt
+      setInput(prompt)
+      setTimeout(() => {
+        handleSend(prompt)
+      }, 500)
+    }
+  }, [])
+
   const addMessage = (role: MessageRole, content: string) => {
     const newMessage: Message = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
