@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+const BACKEND_URL = "http://localhost:8000"
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,12 +59,12 @@ export async function POST(req: NextRequest) {
 
           // Format: **filename** (section)
           const section = s.section || s.article_section || "General Reference"
-          return `${i + 1}. **${fileName}** (${section})`
+          return `   ${i + 1}. **${fileName}** (${section})`
         })
         .join("\n")
 
       if (formattedSources) {
-        sourcesText = `\n\n**📚 Sources:**\n${formattedSources}`
+        sourcesText = `\n\n### 📚 Resources\n${formattedSources}`
       }
     }
 
@@ -72,14 +72,16 @@ export async function POST(req: NextRequest) {
     const contextBadge = data.context_used ? "\n\n> 💡 *Used conversation context*" : ""
 
     // Return the data as-is since backend already returns markdown format
-    // Format it nicely for the frontend
-    const formattedContent = `**${data.summary}**
+    // Format it nicely for the frontend with clear sections
+    const formattedContent = `### 📝 Summary\n${data.summary}
 
-${data.explanation}
+### 💬 Detailed Explanation\n${data.explanation}
 
-**🔑 Key Point:** ${data.key_point}
+### 🔑 Key Points
+- ${data.key_point}
 
-**📋 Next Steps:** ${data.next_steps}${sourcesText}${contextBadge}`.trim()
+### 📋 Next Steps
+${data.next_steps}${sourcesText}${contextBadge}`.trim()
 
     return NextResponse.json({
       content: formattedContent,
