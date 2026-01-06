@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
-import { redirect } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 
 export default function ProfilePage() {
   const { user, isLoading, updateUserDetails } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
   const [age, setAge] = useState("")
   const [nid, setNid] = useState("")
   const [nidError, setNidError] = useState("")
@@ -120,6 +121,9 @@ export default function ProfilePage() {
       title: "Success",
       description: "Profile updated successfully!",
     })
+
+    // Redirect to dashboard after successful save
+    router.push("/dashboard")
   }
 
   return (

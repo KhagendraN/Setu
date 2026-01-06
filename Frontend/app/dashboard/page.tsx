@@ -178,14 +178,14 @@ export default function DashboardPage() {
             <StatsCard
               title="Documents Analyzed"
               value={documentStats.totalAnalyzed.toString()}
-              description={`${documentStats.totalInclusive} inclusive, ${documentStats.totalFlagged} flagged`}
+              description={``}
               icon={ShieldCheck}
               color="accent"
             />
             <StatsCard
               title="Letters Generated"
               value={documentStats.totalLetters.toString()}
-              description="Cached locally"
+              description={``}
               icon={FileText}
               color="success"
             />
