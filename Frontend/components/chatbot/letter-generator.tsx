@@ -681,9 +681,6 @@ export function LetterGenerator() {
             </div>
           )}
 
-          {/* Salutation */}
-          <div style={{ marginBottom: "16px", fontSize: "12pt", color: "rgb(0, 0, 0)",marginLeft:"40px",marginRight:"30px", }}>महोदय,</div>
-
           {/* Main Letter Content */}
           <div
             style={{

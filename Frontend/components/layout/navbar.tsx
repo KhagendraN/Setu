@@ -73,7 +73,7 @@ export function Navbar() {
           ))}
 
           {user ? (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent">
                   <Avatar className="h-8 w-8 border hover:border-primary transition-colors">
