@@ -209,15 +209,30 @@ Setu/
 
 ## 🔌 API Endpoints
 
+### Authentication
+- `POST /api/v1/signup` - Register a new user
+- `POST /api/v1/login` - User login
+- `GET /api/v1/me` - Get current user profile
+- `POST /api/v1/refresh` - Refresh access token
+
 ### Law Explanation (Module A)
-- `POST /api/v1/explain` - Ask legal questions
+- `POST /api/v1/law-explanation/explain` - Ask legal questions (basic)
+- `POST /api/v1/law-explanation/chat` - Context-aware chat with conversation history
+- `GET /api/v1/law-explanation/sources` - Get source documents only
+
+### Chat History
+- `POST /api/v1/chat-history/conversations` - Create a new conversation
+- `GET /api/v1/chat-history/conversations` - List all user conversations
+- `GET /api/v1/chat-history/conversations/{id}` - Get specific conversation with messages
+- `DELETE /api/v1/chat-history/conversations/{id}` - Delete a conversation
+- `POST /api/v1/chat-history/messages` - Save a message to conversation
 
 ### Letter Generation (Module C)
-- `POST /api/v1/search-template` - Search for templates
+- `POST /api/v1/search-template` - Search for letter templates
 - `POST /api/v1/get-template-details` - Get template requirements
-- `POST /api/v1/fill-template` - Fill template with data
-- `POST /api/v1/generate-letter` - Generate complete letter
-- `POST /api/v1/analyze-requirements` - Analyze missing fields
+- `POST /api/v1/fill-template` - Fill template with user data
+- `POST /api/v1/generate-letter` - Generate complete letter (smart generation)
+- `POST /api/v1/analyze-requirements` - Analyze missing fields in template
 
 ### Bias Detection (Module B)
 - `POST /api/v1/detect-bias` - Detect bias in text
@@ -226,10 +241,20 @@ Setu/
 - `POST /api/v1/debias-sentence/batch` - Batch debiasing
 - `GET /api/v1/health` - Health check
 
+### Bias Detection HITL (Human-in-the-Loop)
+- `POST /api/v1/bias-detection-hitl/detect` - Detect bias with HITL workflow
+- `POST /api/v1/bias-detection-hitl/approve` - Approve bias detection results
+- `POST /api/v1/bias-detection-hitl/regenerate` - Regenerate debiased suggestions
+- `POST /api/v1/bias-detection-hitl/generate-pdf` - Generate PDF report
+
 ### PDF Processing (Utility)
 - `POST /api/v1/process-pdf` - Extract text from PDF
 - `POST /api/v1/process-pdf-to-bias` - Extract PDF and detect bias
 - `GET /api/v1/pdf-health` - Health check
+
+### System
+- `GET /` - API welcome message
+- `GET /health` - System health check
 
 Full API documentation: `http://localhost:8000/docs` (when server is running)
 
