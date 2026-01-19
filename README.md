@@ -1,12 +1,3 @@
----
-title: Setu
-emoji: 🇳🇵
-colorFrom: blue
-colorTo: red
-sdk: docker
-app_port: 7860
----
-
 # Setu 🇳🇵
 
 **An AI-powered platform for legal assistance in Nepal** - making legal documents accessible, generating official letters, and detecting bias in legal text.
@@ -35,7 +26,15 @@ Setu is a comprehensive legal assistance platform that leverages AI/ML to help N
 
 Watch the platform in action: [View Demo Video](https://drive.google.com/file/d/12j2J-_g7SHdcQTwU3hQU_uiWldB2RFUz/view?usp=drive_link)
 
-## 🚀 Features
+## � Mobile App
+
+Download the Setu mobile app for Android:
+
+**Latest Release:** [setu-1.0.0.apk](https://github.com/KhagendraN/Setu/releases/download/v1.0.0/setu-1.0.0.apk)
+
+The mobile app provides access to all Setu features on the go, with a native mobile experience optimized for smartphones.
+
+## �🚀 Features
 
 ### Module A: Law Explanation (RAG-Based Chatbot)
 - **Intelligent Q&A**: Ask questions about Nepali laws in natural language (English/Nepali)
@@ -77,6 +76,11 @@ Watch the platform in action: [View Demo Video](https://drive.google.com/file/d/
 - Tailwind CSS - Styling
 - Radix UI - Component library
 - shadcn/ui - UI components
+
+**Mobile App:**
+- React Native - Cross-platform mobile framework
+- Expo - Development platform
+- NativeWind - Tailwind CSS for React Native
 
 **ML/AI:**
 - Hugging Face Transformers
@@ -154,6 +158,21 @@ uvicorn api.main:app --reload --port 8000
 Backend will run at: `http://localhost:8000`
 API docs available at: `http://localhost:8000/docs`
 
+### Mobile App Development
+```bash
+cd MobileApp
+npm install
+
+# Run on Android
+npm run android
+
+# Run on iOS (macOS only)
+npm run ios
+
+# Build APK for Android
+eas build --platform android --profile preview
+```
+
 ### Terminal 2: Frontend
 ```bash
 cd Frontend
@@ -211,6 +230,11 @@ Setu/
 │   ├── retriever.py             # Template retrieval
 │   ├── generator.py             # Letter generation
 │   ├── indexer.py               # Vector DB indexing
+├── MobileApp/                    # React Native mobile app
+│   ├── src/                     # Mobile app source code
+│   ├── assets/                  # Mobile app assets
+│   └── App.tsx                  # Main app component
+│
 │   └── README.md
 │
 ├── utility/                      # PDF Processing
@@ -285,12 +309,14 @@ Full API documentation: `http://localhost:8000/docs` (when server is running)
 
 ## 🎨 Frontend Features
 
+- **Web Application**: Full-featured Next.js web interface
+- **Mobile Application**: Native Android app (iOS coming soon)
 - **Dashboard**: Overview of all modules
 - **Chatbot**: Interactive law explanation interface
 - **Letter Generator**: Step-by-step letter creation wizard
 - **Bias Checker**: Upload documents or paste text for analysis
 - **User Profile**: User account management
-- **Responsive Design**: Works on desktop and mobile
+- **Responsive Design**: Works on desktop, tablet, and mobile
 
 ## 🧪 Testing
 
