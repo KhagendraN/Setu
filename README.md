@@ -1,12 +1,12 @@
-# Setu 🇳🇵
+# Setu
 
 **An AI-powered platform for legal assistance in Nepal** - making legal documents accessible, generating official letters, and detecting bias in legal text.
 
-## 🎯 Project Overview
+## Project Overview
 
 Setu is a comprehensive legal assistance platform that leverages AI/ML to help Nepali citizens interact with legal documents and government processes. The system consists of three main modules integrated with a modern web interface.
 
-## 👥 Team
+## Team
 
 ### Khagendra Neupane
 [GitHub](https://github.com/KhagendraN) | [Portfolio](https://www.khagendraneupane.com.np/) | [LinkedIn](https://www.linkedin.com/in/khagendra-neupane-37427532a/)
@@ -22,11 +22,11 @@ Setu is a comprehensive legal assistance platform that leverages AI/ML to help N
 [GitHub](https://github.com/sampletestg) | [LinkedIn](https://www.linkedin.com/in/rupak-adhikari-40b436344/)
 
 
-## 🎥 Demo Video
+## Demo Video
 
 Watch the platform in action: [View Demo Video](https://drive.google.com/file/d/12j2J-_g7SHdcQTwU3hQU_uiWldB2RFUz/view?usp=drive_link)
 
-## � Mobile App
+## Mobile App
 
 Download the Setu mobile app for Android:
 
@@ -34,7 +34,7 @@ Download the Setu mobile app for Android:
 
 The mobile app provides access to all Setu features on the go, with a native mobile experience optimized for smartphones.
 
-## �🚀 Features
+## Features
 
 ### Module A: Law Explanation (RAG-Based Chatbot)
 - **Intelligent Q&A**: Ask questions about Nepali laws in natural language (English/Nepali)
@@ -61,7 +61,7 @@ The mobile app provides access to all Setu features on the go, with a native mob
 - **OCR Ready**: Handles scanned documents
 - **Integrated Pipeline**: Direct integration with bias detection
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 **Backend:**
 - FastAPI (Python) - RESTful API
@@ -87,14 +87,14 @@ The mobile app provides access to all Setu features on the go, with a native mob
 - Sentence Transformers
 - Custom fine-tuned models (Module B)
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Python**: 3.9+ (recommended: 3.13)
 - **Node.js**: 18+ with pnpm
 - **API Keys**: Mistral AI API key
 - **System**: Linux/macOS/Windows
 
-## ⚙️ Installation
+## Installation
 
 ### 1. Clone the Repository
 ```bash
@@ -142,7 +142,7 @@ pnpm install
 cd ..
 ```
 
-## 🚀 Running the Application
+## Running the Application
 
 You need **TWO terminals** to run the full application:
 
@@ -163,12 +163,6 @@ API docs available at: `http://localhost:8000/docs`
 cd MobileApp
 npm install
 
-# Run on Android
-npm run android
-
-# Run on iOS (macOS only)
-npm run ios
-
 # Build APK for Android
 eas build --platform android --profile preview
 ```
@@ -181,7 +175,7 @@ pnpm dev
 
 Frontend will run at: `http://localhost:3000`
 
-## 🐳 Docker Usage (Recommended)
+## Docker Usage (Recommended)
 
 The easiest way to run the entire platform is using Docker Compose.
 
@@ -201,7 +195,7 @@ This will:
 
 The application will be available at `http://localhost:3000`.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Setu/
@@ -256,7 +250,7 @@ Setu/
     └── module-B/                # Bias detection datasets
 ```
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/v1/signup` - Register a new user
@@ -307,7 +301,7 @@ Setu/
 
 Full API documentation: `http://localhost:8000/docs` (when server is running)
 
-## 🎨 Frontend Features
+## Frontend Features
 
 - **Web Application**: Full-featured Next.js web interface
 - **Mobile Application**: Native Android app (iOS coming soon)
@@ -318,7 +312,7 @@ Full API documentation: `http://localhost:8000/docs` (when server is running)
 - **User Profile**: User account management
 - **Responsive Design**: Works on desktop, tablet, and mobile
 
-## 🧪 Testing
+## Testing
 
 ### Test Module A (Law Explanation)
 ```bash
@@ -341,23 +335,24 @@ python -m utility.test_pdf_processor
 python -m api.test_api
 ```
 
-## 📝 Configuration
+## Configuration
 
 ### Environment Variables (.env)
 ```bash
 # Required
-MISTRAL_API_KEY=your_api_key_here
-
-# Optional - MongoDB (if using Auth Backend)
-# MONGODB_URL=mongodb://localhost:27017
-# SECRET_KEY=your_secret_key
+MISTRAL_API_KEY="your_api_key_here"
+SUPABASE_URL="your_supabase_url_here"
+SUPABASE_ANON_KEY="your_anon_key_here"
+SUPABASE_SERVICE_ROLE_KEY="your_service_role_key_here"
+JWT_SECRET="your_jwt_secret"
+PINECONE_API_KEY="your_pinecone_api_key_here"
 ```
 
 ### Module Configurations
 - **Module A**: [module_a/config.py](module_a/config.py)
 - **Module C**: [module_c/config.py](module_c/config.py)
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Backend Issues
 - **Import errors**: Make sure virtual environment is activated
@@ -384,13 +379,10 @@ pnpm store prune
 pnpm install
 ```
 
-## 📚 Documentation
+## Documentation
 
 - [Module A Documentation](module_a/README.md) - Law Explanation RAG Pipeline
 - [Module C Documentation](module_c/README.md) - Letter Generation
 - [PDF Processing Guide](utility/README.md) - PDF text extraction
 - [Implementation Guides](docs/) - Detailed implementation workflows
 
----
-
-> This project is under development as part of a hackathon.
